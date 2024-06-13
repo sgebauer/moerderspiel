@@ -1,8 +1,12 @@
+from contextlib import contextmanager
+
+from moerderspiel.config import DATABASE_URL
+
 import enum
 from datetime import datetime
 from typing import List, Optional
 
-from sqlalchemy import Engine, Enum, ForeignKey, inspect, select, desc, Select
+from sqlalchemy import Engine, Enum, ForeignKey, inspect, select, desc, Select, create_engine
 from sqlalchemy.ext.orderinglist import ordering_list
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, Session
 from sqlalchemy.schema import CheckConstraint, UniqueConstraint
@@ -111,7 +115,7 @@ class Circle(Base):
 
     @classmethod
     def by_game_and_name(cls, game: Game, name: str) -> 'Circle':
-        return game._query(select(cls).where(cls.game == game).where(cls.name == name)).one()
+        return game._query(select(cls).where(cls.game == game).where(cls.name == name)).one_or_none()
 
     @classmethod
     def by_game(cls, game: Game) -> List['Circle']:
@@ -225,7 +229,7 @@ class Mission(Base):
         return victim._query(select(cls).where(cls.victim == victim).where(cls.circle == circle)).one_or_none()
 
     @classmethod
-    def by_current_owner_in_circle(cls, owner: Player, circle: Circle) -> 'Mission' | None:
+    def by_current_owner_in_circle(cls, owner: Player, circle: Circle) -> 'Mission':
         """
         Get this player's current mission in this circle.
         Return None if the player is not currently alive in this circle.
@@ -257,5 +261,19 @@ class Mission(Base):
         return sum([cls.completed_missions_in_circle(c) for c in game.circles], [])
 
 
-def initialize_database(engine: Engine):
+def connect_to_database() -> Engine:
+    engine = create_engine(DATABASE_URL)
     Base.metadata.create_all(engine)
+    return engine
+
+
+@contextmanager
+def database_session():
+    with Session(connect_to_database()) as session:
+        yield session
+
+
+@contextmanager
+def database_transaction():
+    with database_session() as session, session.begin():
+        yield session

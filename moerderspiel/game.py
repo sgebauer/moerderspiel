@@ -1,4 +1,4 @@
-from db import GameState, Game, Circle, Player, Mission
+from moerderspiel.db import GameState, Game, Circle, Player, Mission
 
 from datetime import datetime
 from sqlalchemy.orm import Session

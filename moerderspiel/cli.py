@@ -1,16 +1,15 @@
-import moerderspiel.db as db
-import moerderspiel.testgame as testgame
-import moerderspiel.pdf as pdf
-import moerderspiel.graph as graph
 import argparse
 import datetime
-
-from game import GameService, GameError
-from db import Game, Circle, Player, Mission
-
-from sqlalchemy import create_engine, select
-from sqlalchemy.orm import Session
 from typing import List
+
+from sqlalchemy.orm import Session
+
+import moerderspiel.config as config
+import moerderspiel.graph as graph
+import moerderspiel.pdf as pdf
+import moerderspiel.testgame as testgame
+from moerderspiel.db import Game, Circle, Player, Mission, database_transaction
+from moerderspiel.game import GameService, GameError
 
 
 def error(message: str):
@@ -83,7 +82,7 @@ def create_test_game(session: Session, game: str, mail: str, code: str, players:
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--db', type=str, help='The database URI', required=True)
+    parser.add_argument('--db', type=str, help='The database URI, defaults to the DATABASE_URL environment variable')
     parser.add_argument('--game', type=str, help='The name of the game', required=True)
     subparsers = parser.add_subparsers(dest='command', required=True)
 
@@ -144,12 +143,12 @@ def main():
 
     args = parser.parse_args()
 
-    engine = create_engine(args.db)
-    db.initialize_database(engine)
+    if 'db' in args:
+        config.DATABASE_URL = args.db
 
-    with Session(engine) as session, session.begin():
+    with database_transaction() as session:
         if args.function not in [create_game, create_test_game]:
-            args.game = session.scalars(select(Game).where(Game.id == args.game)).one()
+            args.game = Game.by_id(session, str(args.game))
 
         try:
             args.function(session=session, **vars(args))

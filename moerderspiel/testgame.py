@@ -1,8 +1,8 @@
 import random
 from datetime import datetime
 
-from db import Mission
-from game import GameService
+from moerderspiel.db import Mission
+from moerderspiel.game import GameService
 
 TESTGAME_PLAYERS = [
     {"name": "Enton Quietschie", "info": "Uni Passau"},
