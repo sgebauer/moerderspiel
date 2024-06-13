@@ -1,0 +1,35 @@
+\documentclass[8pt]{extarticle}
+\usepackage{pifont}
+
+% This size fits 12 missions on one portrait A4 sheet
+\usepackage[paperheight=74.25mm,paperwidth=70mm,margin=4mm]{geometry}
+
+\usepackage{catchfile}
+\newcommand{\getenv}[1]{\CatchFileEdef{\temp}{"|kpsewhich --var-value #1"}{\endlinechar=-1}\temp}
+
+\begin{document}
+
+  \centering
+  \getenv{owner} \\
+  \dotfill\raisebox{-0.25\baselineskip}{\ding{34}}\dotfill {\tiny Nach Erhalt des Auftrags hier abtrennen} \dotfill\raisebox{-0.25\baselineskip}{\ding{34}}\dotfill
+  \\~\\
+
+  \fbox{\begin{minipage}[b][53mm][c]{55mm}
+    \begin{center}
+      \getenv{headline} \\
+      \medskip
+      Mordauftrag: \\
+      {\Large \textbf{\sffamily{\getenv{victim}}}}
+    \end{center}
+
+    \textbf{Trage diesen Auftrag immer bei dir.}
+    Hast du ihn erledigt, zeige ihn deinem Opfer zum Beweis, und melde den Mord dann auf der Webseite des Spiels.
+    Wurdest du in diesem Kreis ermordet, gib diesen Auftrag deinem Mörder.
+
+    \begin{center}
+      Auftrags-Code: \texttt{\getenv{missioncode}} \\
+      \texttt{\getenv{gameurl}}
+    \end{center}
+  \end{minipage}}
+
+\end{document}

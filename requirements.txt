@@ -1,0 +1,2 @@
+sqlalchemy~=2.0
+graphviz~=0.20
