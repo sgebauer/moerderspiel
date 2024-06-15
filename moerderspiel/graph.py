@@ -1,5 +1,6 @@
 import os.path
 
+from moerderspiel import util
 from moerderspiel.db import Circle
 from moerderspiel.config import CACHE_DIRECTORY
 
@@ -16,15 +17,17 @@ def get_circles_graph_cache_path(circles: List[Circle]) -> str:
 
 
 def generate_circles_graph(circles: List[Circle]) -> None:
-    missions = sum([c.missions for c in circles], [])
-
     dot = graphviz.Digraph()
+    colorscheme = util.colorscheme()
 
-    for mission in missions:
-        dot.node(mission.victim.name)
-        dot.edge(mission.initial_owner.name, mission.victim.name, style="dashed")
+    for circle in circles:
+        color = '#%02x%02x%02x' % next(colorscheme)
 
-        if mission.completed:
-            dot.edge(mission.killer.name, mission.victim.name, label=mission.completion_reason)
+        for mission in circle.missions:
+            dot.node(mission.victim.name)
+            dot.edge(mission.initial_owner.name, mission.victim.name, style="dashed", color=color)
+
+            if mission.completed:
+                dot.edge(mission.killer.name, mission.victim.name, label=mission.completion_reason, color=color)
 
     dot.render(format='svg', outfile=get_circles_graph_cache_path(circles))
