@@ -2,19 +2,22 @@ from moerderspiel.db import Game, Mission
 from moerderspiel.config import CACHE_DIRECTORY, BASE_URL
 
 import os
+import os.path
 import subprocess
 import hashlib
+
+RESOURCE_DIRECTORY = os.path.join(os.path.dirname(__file__), 'resources')
 
 
 def get_mission_sheet_cache_path(mission: Mission) -> str:
     mission_hash = hashlib.sha1(
         f"{mission.game.id}/{mission.circle.id}/{mission.victim.id}".encode('utf-8')).hexdigest()
-    return f"{CACHE_DIRECTORY}/mission-sheets/{mission_hash}.pdf"
+    return os.path.join(CACHE_DIRECTORY, 'mission-sheets', f"{mission_hash}.pdf")
 
 
 def get_game_mission_sheet_cache_path(game: Game) -> str:
     game_hash = hashlib.sha1(game.id.encode('utf-8')).hexdigest()
-    return f"{CACHE_DIRECTORY}/mission-sheets/{game_hash}.pdf"
+    return os.path.join(CACHE_DIRECTORY, 'mission-sheets', f"{game_hash}.pdf")
 
 
 def generate_mission_sheet(mission: Mission) -> None:
@@ -31,7 +34,7 @@ def generate_mission_sheet(mission: Mission) -> None:
     else:
         env['headline'] = f"{mission.game.name} - {mission.circle.name}"
 
-    subprocess.run('./resources/build-mission-sheet.sh')
+    subprocess.run(os.path.join(RESOURCE_DIRECTORY, 'build-mission-sheet.sh'))
 
 
 def generate_game_mission_sheet(game: Game) -> None:

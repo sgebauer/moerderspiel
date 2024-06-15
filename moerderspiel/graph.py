@@ -1,3 +1,5 @@
+import os.path
+
 from moerderspiel.db import Circle
 from moerderspiel.config import CACHE_DIRECTORY
 
@@ -10,7 +12,7 @@ import hashlib
 def get_circles_graph_cache_path(circles: List[Circle]) -> str:
     circles_id = circles[0].game.id + '/' + '+'.join([str(c.id) for c in circles])
     circles_hash = hashlib.sha1(circles_id.encode('utf-8')).hexdigest()
-    return f"{CACHE_DIRECTORY}/graphs/{circles_hash}.svg"
+    return os.path.join(CACHE_DIRECTORY, 'graphs', f"{circles_hash}.svg")
 
 
 def generate_circles_graph(circles: List[Circle]) -> None:
