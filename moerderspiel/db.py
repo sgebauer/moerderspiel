@@ -64,9 +64,9 @@ class Player(Base):
     name: Mapped[str]
 
     """
-    Short additional info distinguishing players, e.g. affiliation with a school.
+    The group (e.g. school) that this player belongs to.
     """
-    info: Mapped[str]
+    group: Mapped[str]
 
     """
     The player's contact information for notifications.

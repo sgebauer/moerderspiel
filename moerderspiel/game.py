@@ -1,9 +1,10 @@
+import random
+
 from moerderspiel.db import GameState, Game, Circle, Player, Mission
 
 from datetime import datetime
 from sqlalchemy.orm import Session
 from typing import List
-from random import randrange
 
 
 class GameError(RuntimeError):
@@ -73,14 +74,25 @@ class GameService:
         if self.game.state != GameState.new:
             raise GameError("Game has already been started")
 
-        circle = self.get_circle(circle)
+        missions = list(self.get_circle(circle).missions)
+        random.shuffle(missions)
 
-        missions = circle.missions
-        positions = list(range(len(missions)))
-        for mission in missions:
-            i = randrange(len(positions))
-            mission.position = positions[i]
-            del positions[i]
+        previous_mission = None
+        for position in range(len(missions)):
+            mission = None
+
+            # Avoid placing players from the same group next to each other in the circle. In our (already shuffled) list
+            # of missions-to-place, try to find the first one that belongs to a different group than the previous
+            # mission we placed.
+            for i in range(len(missions)):
+                mission = missions[i]
+                if not previous_mission or not previous_mission.victim.group \
+                        or mission.victim.group != previous_mission.victim.group:
+                    del missions[i]
+                    break
+
+            mission.position = position
+            previous_mission = mission
 
     def start_game(self):
         if self.game.state != GameState.new:

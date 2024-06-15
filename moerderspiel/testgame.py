@@ -5,14 +5,22 @@ from moerderspiel.db import Mission
 from moerderspiel.game import GameService
 
 TESTGAME_PLAYERS = [
-    {"name": "Enton Quietschie", "info": "Uni Passau"},
-    {"name": "Tangente", "info": "Uni Passau"},
-    {"name": "Studente", "info": "Uni Passau"},
-    {"name": "Ente Wurzel", "info": "Uni Passau"},
-    {"name": "Enteger", "info": "Uni Passau"},
-    {"name": "Quotiente", "info": "Uni Passau"},
-    {"name": "Cybär", "info": "JKU Linz"},
-    {"name": "Sobiber", "info": "Uni Passau"},
+    {"name": "Enton Quietschie", "group": "Uni Passau"},
+    {"name": "Tangente", "group": "Uni Passau"},
+    {"name": "Studente", "group": "Uni Passau"},
+    {"name": "Ente Wurzel", "group": "Uni Passau"},
+    {"name": "Enteger", "group": "Uni Passau"},
+    {"name": "Quotiente", "group": "Uni Passau"},
+    {"name": "Cybär", "group": "JKU Linz"},
+    {"name": "ΦΨ", "group": "Uni Erlangen"},
+    {"name": "Emmy", "group": "Uni Regensburg"},
+    {"name": "Hilbärt", "group": "HU Berlin"},
+    {"name": "Karl der Löwe", "group": "Uni Bremen"},
+    {"name": "Owlaf", "group": "Uni Erlangen"},
+    {"name": "Sir Dagger", "group": "TU Darmstadt"},
+    {"name": "Nugget", "group": "HHU Düsseldorf"},
+    {"name": "Rudi Die Halts-Maul-Giraffe", "group": "TU Darmstadt"},
+    {"name": "Dr. Chomp", "group": "JKU Linz"},
 ]
 
 
