@@ -1,0 +1,100 @@
+body footer {
+    text-align: center;
+    justify-content: space-around;
+}
+
+body footer a {
+    --pico-color: var(--pico-color-muted);
+    --pico-text-decoration: none;
+}
+
+
+p {
+    text-align: justify;
+}
+
+
+#missions {
+    display: flex;
+    flex-flow: row wrap;
+    gap: 1em;
+}
+
+#missions article {
+    margin: 0;
+    width: 15em;
+    flex-grow: 1;
+    display: flex;
+    flex-flow: column;
+    justify-content: space-between;
+}
+
+#missions article header {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    text-align: center;
+    align-items: center;
+}
+
+#missions article main {
+    text-align: center;
+}
+
+#missions article footer {
+    display: flex;
+    justify-content: space-between;
+}
+
+
+
+body:has(dialog :target) {
+    overflow: hidden;
+    pointer-events: none;
+    touch-action: none;
+}
+
+dialog:has(*:target) {
+    display: flex;
+    overflow: auto;
+    pointer-events: auto;
+    touch-action: auto;
+}
+
+dialog .background {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: -1;
+    cursor: default;
+}
+
+
+.flashes {
+    position: fixed;
+    bottom: 2%;
+    right: 2%;
+    z-index: 1000;
+}
+
+.flashes article.error {
+    border: solid 1px red;
+}
+
+.flashes article.success {
+    border: solid 1px green;
+}
+
+
+
+a[role=button] {
+    display: inline-block;
+    align-content: center;
+}
+
+h1 a,
+h1 a:focus {
+    --pico-color: inherit;
+    --pico-text-decoration: inherit;
+}

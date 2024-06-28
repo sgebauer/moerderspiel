@@ -140,6 +140,9 @@ class GameService:
 
         self.game.state = GameState.ended
 
+    def check_gamemaster_password(self, password) -> bool:
+        return self.game.check_gamemaster_password(password)
+
     def flush_changes(self):
         self.game.flush_changes()
 

@@ -1,0 +1,121 @@
+{% extends "_base.html.j2" %}
+
+{% block main %}
+<article>
+    <header>
+        <h1>Gamemaster-Bereich: {{ game.title }}</h1>
+    </header>
+    <main>
+        {% include "partials/gameinfo.html.j2" %}
+
+        <form method="post" class="grid">
+            {% if not game.started %}
+            <button class="primary" name="game-state-action" value="start">Spiel starten</button>
+            {% elif not game.ended %}
+            <button class="primary" name="game-state-action" value="end">Spiel abschließen</button>
+            {% endif %}
+
+            {% if game.started %}
+            <a role="button" class="secondary" href="/game/{{ game.id }}/missions.pdf" target="_blank">Aufträge herunterladen</a>
+            {% endif %}
+
+            <a role="button" class="secondary" href="/game/{{ game.id }}" target="_blank">Zur Spiel-Seite</a>
+        </form>
+    </main>
+</article>
+
+<article>
+    <header>
+        <h1>Spieler</h1>
+    </header>
+    <main>
+        <details>
+            <summary role="button" class="secondary">Angemeldete Spieler</summary>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Gruppe</th>
+                        <th>Morde</th>
+                        <th>Leben</th>
+                    </tr>
+                </thead>
+                {% for player in game.players %}
+                <tr>
+                    <td>{{ player.name }}</td>
+                    <td>{{ player.group }}</td>
+                    <td>{{ player.completed_missions | list | length }}</td>
+                    <td>{{ player.victim_missions | rejectattr('completed') | list | length }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </details>
+    </main>
+    <div class="grid">
+        {% if not game.started %}
+        <a role="button" class="primary" target="_blank"
+           href="{{ url_for('game', game_id=game.id, _anchor='add-player') }}">
+            Spieler hinzufügen
+        </a>
+        {% endif %}
+    </div>
+</article>
+
+<article>
+    <header>
+        <h1>Kreise</h1>
+    </header>
+    <main>
+        {% if game.started %}
+        {% for circle in game.circles %}
+        <details>
+            <summary role="button" class="secondary">
+                {{- circle.name -}}
+                {{- '(' ~ circle.set ~ ')' if circle.set else '' -}}
+            </summary>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Ermordet von</th>
+                        <th>Wann?</th>
+                        <th>Tathergang</th>
+                    </tr>
+                </thead>
+                {% for mission in circle.missions | sort(attribute='position') %}
+                <tr>
+                    <td>{{ mission.victim.name }}</td>
+                    <td>{{ mission.killer.name | default('', true) }}</td>
+                    <td>{{ mission.completion_date | default('', true) }}</td>
+                    <td>{{ mission.completion_reason | default('', true) }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </details>
+        {% endfor %}
+        {% else %}
+        <form method="post">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Kreis</th>
+                        <th>Kreis-Set</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                {% for circle in game.circles %}
+                <tr>
+                    <td>{{ circle.name }}</td>
+                    <td>{{ circle.set | default('', true) }}</td>
+                    <td><a role="button" class="primary outline" disabled>X</a></td>
+                </tr>
+                {% endfor %}
+            </table>
+            <div role="group">
+                <button class="primary" name="circle-action" value="add">Kreis hinzufügen</button>
+            </div>
+        </form>
+        {% endif %}
+    </main>
+</article>
+{% endblock %}

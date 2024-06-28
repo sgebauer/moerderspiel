@@ -1,2 +1,5 @@
 sqlalchemy~=2.0
 graphviz~=0.20
+flask~=3.0
+Flask-SQLAlchemy~=3.1
+WTForms~=3.1

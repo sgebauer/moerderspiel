@@ -1,0 +1,86 @@
+{% extends "_base.html.j2" %}
+
+{% block main %}
+<article id="game-details">
+    <header>
+        <h1>Spiel: {{ game.title }}</h1>
+    </header>
+    <main>
+        {% include "partials/gameinfo.html.j2" %}
+
+        <div role="row">
+            <article>Massenmörder</article>
+            <article>
+                {% for player in mass_murderers %}
+                    {{ player.name }}{{ ', ' if not loop.last else '' }}
+                {% endfor %}
+                ({{ completed_missions | selectattr('killer', 'eq', mass_murderers[0]) | list | length }} Morde)
+            </article>
+        </div>
+    </main>
+
+    <footer class="grid">
+        {% if game.started %}
+        <a role="button" class="primary" href="#record-murder">Mord melden</a>
+        {% else %}
+        <a role="button" class="primary" href="#{{ add_player_form.form_id }}">Spieler eintragen</a>
+        {% endif %}
+
+        <a role="button" class="secondary" href="../rules/{{ game.id }}">Spielregeln</a>
+
+        {% if game.started %}
+        <a role="button" class="secondary" href="../wall/{{ game.id }}">Mörderwall</a>
+        {% endif %}
+
+        <a role="button" class="secondary" href="../gamemaster/{{ game.id }}">Gamemaster-Bereich</a>
+    </footer>
+</article>
+
+<div id="missions">
+    {% for mission in completed_missions -%}
+        {% include "partials/mission.html.j2" %}
+    {%- endfor %}
+</div>
+{% endblock %}
+
+{% block modals %}
+{% call dialog(title='Gamemaster-Login') %}
+<main>
+    {% with form = gamemaster_login_form %}
+    <form method="post">
+        {{ render_field(form.password, id=form.form_id) }}
+        <button type="submit" name="form" value="{{ form.form_id }}">Anmelden</button>
+    </form>
+    {% endwith %}
+</main>
+{% endcall %}
+
+{% call dialog(title='Mord melden') %}
+<main>
+    {% with form = record_murder_form %}
+    <form method="post">
+        {{ render_field(form.killer, id='record-murder') }}
+        {{ render_field(form.victim) }}
+        {{ render_field(form.circle) }}
+        {{ render_field(form.when, value=form.when.default) }}
+        {{ render_field(form.mission_code) }}
+        {{ render_field(form.description) }}
+
+        <button type="submit" name="form" value="{{ form.form_id }}">Mord eintragen</button>
+    </form>
+    {% endwith %}
+</main>
+{% endcall %}
+
+{% call dialog(title='Spieler eintragen') %}
+<main>
+    {% with form = add_player_form %}
+    <form method="post">
+        {{ render_field(form.name) }}
+        {{ render_field(form.group) }}
+        <button type="submit" name="form" value="{{ form.form_id }}">Spieler eintragen</button>
+    </form>
+    {% endwith %}
+</main>
+{% endcall %}
+{% endblock %}

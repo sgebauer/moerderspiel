@@ -1,0 +1,83 @@
+{% extends "_base.html.j2" %}
+
+{% block main %}
+<article>
+    <header>
+        <h1>Los gehts!</h1>
+    </header>
+    <main>
+        <form action="./game" method="get">
+            <fieldset role="group">
+                <input name="id" placeholder="Spiel-ID" type="text" required/>
+                <button type="submit" style="min-width: fit-content;">Zum Spiel</button>
+            </fieldset>
+        </form>
+        <div class="grid">
+            <a href="#{{ create_game_form.form_id }}" role="button" class="secondary">Neues Spiel erstellen</a>
+        </div>
+    </main>
+</article>
+
+<article>
+    <header>
+        <h1>Was ist das hier?</h1>
+    </header>
+    <main>
+        <p>
+            Das Mörderspiel ist ein Nebenbei-Spiel im Real Life für größere Gruppen (6 bis 166 Spieler/innen) über
+            mehrere Tage mit mindestens drei Auswirkungen:
+        </p>
+
+        <ul>
+            <li>Man lernt sich untereinander besser kennen</li>
+            <li>Man entwickelt ein gehöriges Maß an Paranoia</li>
+            <li>Man lernt, eine versteckte Agenda mit kreativen Mitteln zu verfolgen</li>
+        </ul>
+
+        <p>
+            Alle Mitspielenden erhalten zum Start zufällig einen (nach Gusto auch mehrere) Mordaufträge;
+            z.B. "Erledige Bertram". Man zieht also los und sucht Bertram, den man erst mal erkennen und dann durch
+            Übergabe eines beliebigen Gegenstandes umbringen soll. Es muss schon eine freiwillige, unbeobachtete
+            Übergabe sein, andernfalls gilt der Mord nicht. Ziel ist es, das Opfer in eine Situation zu bringen, bei der
+            er nicht aufs Spiel achtet und einfach einen Gegenstand annimmt. Zuwerfen gilt nicht, aufzwängen auch nicht.
+        </p>
+
+        <p>
+            Hat man jemanden erfolgreich ermordet, muss man ihm dies sofort sagen und erhält vom Opfer dessen Mordauftrag,
+            mit dem man weiter spielen kann. Das Opfer ist dann raus aus dem Spiel (es sei denn, man spielt mit mehreren
+            Leben ... und in dem Falle sollte der Mörder aufpassen, nicht mit der Übergabe des Mordauftrags umgebracht zu
+            werden).
+        </p>
+
+        <p>
+            Geeignete Gelegenheiten zum Spielen sind zum Beispiel:
+        </p>
+
+        <ul>
+            <li>Auf Konferenzen. Entstanden ist das Mörderspiel in seiner derzeitigen Form auf der Konferenz der
+                Informatik-Fachschaften.</li>
+            <li>Im Urlaub, wenn man mit einigen Freunden verreist.</li>
+            <li>In der Uni oder Schule.</li>
+            <li>... im Grunde immer, wenn sich 6 oder mehr Leute über mehr als zwei Tage regelmäßig über den Weg
+                laufen.</li>
+        </ul>
+    </main>
+</article>
+{% endblock %}
+
+{% block modals %}
+{% call dialog(title='Neues Spiel erstellen') %}
+<main>
+    {% with form = create_game_form %}
+    <form method="post">
+        {{ render_field(form.game_id) }}
+        {{ render_field(form.title) }}
+        {{ render_field(form.template) }}
+        {{ render_field(form.password) }}
+        {{ render_field(form.confirm_password) }}
+        <button type="submit" name="form" value="{{ form.form_id }}">Spiel erstellen</button>
+    </form>
+    {% endwith %}
+</main>
+{% endcall %}
+{% endblock %}

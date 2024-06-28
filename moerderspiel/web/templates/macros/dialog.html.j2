@@ -1,0 +1,12 @@
+{% macro dialog(title) %}
+<dialog>
+    <a href="#" class="background"></a>
+    <article>
+        <header>
+            <a href="#" aria-label="Close" rel="prev"></a>
+            <p><strong>{{ title }}</strong></p>
+        </header>
+        {{ caller() }}
+    </article>
+</dialog>
+{% endmacro %}

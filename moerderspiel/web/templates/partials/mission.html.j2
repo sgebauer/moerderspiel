@@ -1,0 +1,14 @@
+<article class="mission-card">
+    <header class="players">
+        <span class="killer">{{ mission.killer.name }}</span>
+        <span></span>
+        <span class="victim">{{ mission.victim.name }}</span>
+    </header>
+    <main>
+        <p>{{ mission.completion_reason }}</p>
+    </main>
+    <footer>
+        <small class="circle-marker">{{ mission.circle.name }}</small>
+        <small>{{ mission.completion_date.strftime('%Y-%m-%d %H:%M') }}</small>
+    </footer>
+</article>

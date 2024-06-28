@@ -1,0 +1,19 @@
+<div class="grid">
+    <div role="group">
+        <article>ID</article>
+        <article>{{ game.id }}</article>
+    </div>
+    <div role="group">
+        <article>Status</article>
+        <article>{{ game.state }}</article>
+    </div>
+
+    <div role="group">
+        <article>Spieler</article>
+        <article>{{ game.players | length }}</article>
+    </div>
+    <div role="group">
+        <article>Morde</article>
+        <article>{{ completed_missions | length }}</article>
+    </div>
+</div>
