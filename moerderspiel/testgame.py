@@ -21,6 +21,14 @@ TESTGAME_PLAYERS = [
     {"name": "Nugget", "group": "HHU Düsseldorf"},
     {"name": "Rudi Die Halts-Maul-Giraffe", "group": "TU Darmstadt"},
     {"name": "Dr. Chomp", "group": "JKU Linz"},
+    {"name": "Gert-Doris", "group": "KIT"},
+]
+
+TESTGAME_REASONS = [
+    "Mit USB-Kabel erwürgt",
+    "Zu Tode geflauscht",
+    "Von der Klippe geschubst",
+    "Im Keller vergessen worden",
 ]
 
 
@@ -46,5 +54,5 @@ def record_random_murder(service: GameService) -> None:
         victim=mission.victim,
         circle=mission.circle,
         when=datetime.now(),
-        reason="Testmord",
+        reason=random.choice(TESTGAME_REASONS),
         code=mission.code)
