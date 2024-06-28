@@ -17,9 +17,10 @@ def error(message: str):
     exit(1)
 
 
-def create_game(session: Session, game: str, name: str, description: str, circle: List[str], mail: str, code: str,
+def create_game(session: Session, game: str, title: str, circle: List[str], password: str,
                 endtime: datetime.datetime, **kwargs):
-    GameService.create_new_game(session, game, name, description, mail, code, endtime, circle)
+    GameService.create_new_game(session=session, id=game, title=title, gamemaster_password=password, endtime=endtime,
+                                circles=circle)
 
 
 def add_player(game: Game, name: str, circle: List[str], **kwargs):
@@ -65,13 +66,13 @@ def get_missions(game: Game, player: str = None, circle: str = None, **kwargs):
                 print(f"{player.name} in {circle.name}: {mission.victim.name}")
 
 
-def create_test_game(session: Session, game: str, mail: str, code: str, players: int, circles: int, description: str,
+def create_test_game(session: Session, game: str, password: str, players: int, circles: int, description: str,
                      endtime: datetime.datetime, name: str = None, murders: int = None, **kwargs):
     name = name or game
     murders = murders or int(players * circles / 2)
 
-    service = GameService.create_new_game(session, id=game, name=name, description=description, mastermail=mail,
-                                          mastercode=code, endtime=endtime,
+    service = GameService.create_new_game(session, id=game, title=name, description=description,
+                                          gamemaster_password=password, endtime=endtime,
                                           circles=list([f"Circle {i}" for i in range(circles)]))
     testgame.populate_test_game(service, players)
     service.start_game()
@@ -88,17 +89,15 @@ def main():
 
     s = subparsers.add_parser('create-game', help='Create a new game')
     s.set_defaults(function=create_game)
-    s.add_argument('name', type=str, help='The fancy name of the game')
+    s.add_argument('title', type=str, help='The fancy title of the game')
     s.add_argument('description', type=str, help='The game description')
     s.add_argument('--circle', type=str, action='append', help='Add a circle with the given name', required=True)
-    s.add_argument('--mail', type=str, help='The email address of the game master', required=True)
-    s.add_argument('--code', type=str, help='The game master password', required=True)
+    s.add_argument('--password', type=str, help='The game master password', required=True)
     s.add_argument('--endtime', type=datetime.datetime, help='When the game ends')
 
     s = subparsers.add_parser('create-test-game', help='Create a populated and running test game')
     s.set_defaults(function=create_test_game)
-    s.add_argument('--mail', type=str, help='The email address of the game master', required=True)
-    s.add_argument('--code', type=str, help='The game master password', required=True)
+    s.add_argument('--password', type=str, help='The game master password', required=True)
     s.add_argument('--name', type=str, help='The fancy name of the game', default=None)
     s.add_argument('--description', type=str, help='The game description', default="Test Game")
     s.add_argument('--players', type=int, help='The number of players to add to the game',

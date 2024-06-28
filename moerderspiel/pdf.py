@@ -30,9 +30,9 @@ def generate_mission_sheet(mission: Mission) -> None:
     env['gameurl'] = f"{BASE_URL}/{mission.game.id}"
 
     if len(mission.game.circles) == 1:
-        env['headline'] = mission.game.name
+        env['headline'] = mission.game.title
     else:
-        env['headline'] = f"{mission.game.name} - {mission.circle.name}"
+        env['headline'] = f"{mission.game.title} - {mission.circle.name}"
 
     subprocess.run(os.path.join(RESOURCE_DIRECTORY, 'build-mission-sheet.sh'))
 

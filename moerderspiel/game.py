@@ -144,19 +144,17 @@ class GameService:
         self.game.flush_changes()
 
     @classmethod
-    def create_new_game(cls, session: Session, id: str, name: str, description: str, mastermail: str, mastercode: str,
-                        endtime: datetime, circles: List[str] = None) -> 'GameService':
+    def create_new_game(cls, session: Session, id: str, title: str, gamemaster_password: str,
+                        circles: List[str] = None, **kwargs) -> 'GameService':
         if Game.exists_by_id(session, id):
-            raise GameError(f"A game named {id} already exists")
+            raise GameError(f"A game with ID '{id}' already exists")
 
         game = Game(
             state=GameState.new,
             id=id,
-            name=name,
-            description=description,
-            mastermail=mastermail,
-            mastercode=mastercode,
-            endtime=endtime
+            title=title,
+            gamemaster_password=gamemaster_password,
+            **kwargs
         )
         session.add(game)
         service = cls(game)

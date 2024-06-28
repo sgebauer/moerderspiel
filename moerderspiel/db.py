@@ -6,7 +6,7 @@ import enum
 from datetime import datetime
 from typing import List, Optional
 
-from sqlalchemy import Engine, Enum, ForeignKey, inspect, select, desc, Select, create_engine
+from sqlalchemy import Engine, Enum, ForeignKey, inspect, select, desc, Select, create_engine, func
 from sqlalchemy.ext.orderinglist import ordering_list
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, Session
 from sqlalchemy.schema import CheckConstraint, UniqueConstraint
@@ -29,16 +29,43 @@ class GameState(enum.IntEnum):
 class Game(Base):
     __tablename__ = "game"
 
+    """
+    The unique ID of the game. This string will be visible to players and used in URLs, etc.
+    """
     id: Mapped[str] = mapped_column(primary_key=True)
+
+    """
+    The current state of the game.
+    """
     state: Mapped[GameState] = mapped_column(Enum(GameState))  # TODO Get this mapped to an int in the database
-    name: Mapped[str]
-    description: Mapped[str]
-    mastermail: Mapped[str]
-    mastercode: Mapped[str]  # TODO: Hashed?
+
+    """
+    The fancy title of the game.
+    """
+    title: Mapped[str]
+
+    """
+    Contact information of the game master. Used for notifications, but not disclosed to players.
+    """
+    gamemaster_contact: Mapped[Optional[str]]
+
+    """
+    The game master's password.
+    """
+    gamemaster_password: Mapped[str]  # TODO: Hashed?
+
     endtime: Mapped[Optional[datetime]]
 
     circles: Mapped[List["Circle"]] = relationship(back_populates="game")
     players: Mapped[List["Player"]] = relationship(back_populates="game")
+
+    @property
+    def started(self) -> bool:
+        return self.state in [GameState.running, GameState.ended]
+
+    @property
+    def ended(self) -> bool:
+        return self.state == GameState.ended
 
     @classmethod
     def exists_by_id(cls, session: Session, id: str) -> bool:
@@ -51,11 +78,22 @@ class Game(Base):
     def add(self, something: Base) -> None:
         inspect(self).session.add(something)
 
+    def check_gamemaster_password(self, password: str) -> bool:
+        return password == self.gamemaster_password
+
 
 class Player(Base):
     __tablename__ = "player"
 
+    """
+    The globally unique ID of the player. While a player is also uniquely identifiable by its game and name, the single
+    ID makes some database operations much easier.
+    """
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+
+    """
+    The ID of the game to which this player belongs.
+    """
     game_id: Mapped[int] = mapped_column(ForeignKey(Game.id))
 
     """
@@ -95,8 +133,20 @@ class Player(Base):
 class Circle(Base):
     __tablename__ = "circle"
 
+    """
+    The globally unique ID of the circle. While a circle is also uniquely identifiable by its game and name, the single
+    ID makes some database operations much easier.
+    """
     id: Mapped[int] = mapped_column(primary_key=True)
+
+    """
+    The ID of the game to which this circle belongs.
+    """
     game_id: Mapped[int] = mapped_column(ForeignKey(Game.id))
+
+    """
+    The unique name of this circle in its game. The name is visible to players.
+    """
     name: Mapped[str]
 
     """
@@ -123,15 +173,49 @@ class Circle(Base):
 
 
 class Mission(Base):
+    """
+    A mission represents a player as a potential murder victim in a circle.
+
+    If some Player p plays in a Circle c, then there is exactly one Mission in c with p as the victim.
+    p is still alive in c as long as m is not completed. When m is completed, it also stores who killed p, and when, and
+    how.
+
+    Missions in a Circle are ordered through a position number (modulo the number of missions in the circle). These
+    position numbers are assigned randomly when the game is started. In order to find p's current potential victim
+    (or killer), we can start at p's mission and "walk forward" (or backward) in the circle until we find the next
+    mission that has not been completed yet.
+    """
+
     __tablename__ = "mission"
 
+    """
+    The ID of the circle to which this mission belongs.
+    """
     circle_id: Mapped[int] = mapped_column(ForeignKey(Circle.id), primary_key=True)
+
+    """
+    The ID of the victim of this mission.
+    """
     victim_id: Mapped[int] = mapped_column(ForeignKey(Player.id), primary_key=True)
 
+    """
+    The position of this mission in its circle. This is None if and only if the game has not been started yet.
+    """
     position: Mapped[Optional[int]] = mapped_column()
 
+    """
+    The ID of the player who completed this mission.
+    """
     killer_id: Mapped[Optional[int]] = mapped_column(ForeignKey(Player.id))
+
+    """
+    The timestamp when this mission was completed.
+    """
     completion_date: Mapped[Optional[datetime]]
+
+    """
+    The description of how this mission was completed.
+    """
     completion_reason: Mapped[Optional[str]]
 
     __table_args__ = (
@@ -259,6 +343,21 @@ class Mission(Base):
     def completed_missions_in_game(cls, game: Game) -> List['Mission']:
         # TODO: This can be done in a single query
         return sum([cls.completed_missions_in_circle(c) for c in game.circles], [])
+
+    @classmethod
+    def by_killer(cls, killer: Player) -> List['Mission']:
+        return list(killer._query(select(cls).where(cls.killer == killer)).all())
+
+    @classmethod
+    def mass_murderers_by_game(cls, game: Game) -> List[Player]:
+        max_kill_count = game._query(
+            select(func.count()).select_from(Mission).where(Mission.killer_id != None).group_by(
+                Mission.killer_id).order_by(desc(func.count())).limit(1)).one_or_none()
+
+        if not max_kill_count:
+            return []
+        else:
+            return list(p for p in game.players if len(cls.by_killer(p)) == max_kill_count)
 
 
 def connect_to_database() -> Engine:
