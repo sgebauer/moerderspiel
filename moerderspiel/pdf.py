@@ -40,7 +40,7 @@ def generate_mission_sheet(mission: Mission) -> None:
 def generate_game_mission_sheet(game: Game) -> None:
     mission_sheets = []
 
-    for mission in Mission.achievable_missions_in_game(game):
+    for mission in sorted(Mission.achievable_missions_in_game(game), key=lambda p: p.current_owner.name):
         generate_mission_sheet(mission)
         mission_sheets.append(get_mission_sheet_cache_path(mission))
 
