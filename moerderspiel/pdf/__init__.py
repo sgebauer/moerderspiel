@@ -6,7 +6,7 @@ import os.path
 import subprocess
 import hashlib
 
-RESOURCE_DIRECTORY = os.path.join(os.path.dirname(__file__), 'resources')
+RESOURCE_DIRECTORY = os.path.dirname(__file__)
 
 
 def get_mission_sheet_cache_path(mission: Mission) -> str:
