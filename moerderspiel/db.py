@@ -121,6 +121,10 @@ class Player(Base):
     completed_missions: Mapped[List["Mission"]] = relationship(back_populates="killer",
                                                                primaryjoin="Player.id == Mission.killer_id")
 
+    @property
+    def alive(self):
+        return any(m for m in self.victim_missions if not m.completed)
+
     @classmethod
     def by_game_and_name(cls, game: Game, name: str) -> 'Player':
         return game._query(select(cls).where(cls.game == game).where(cls.name == name)).one_or_none()

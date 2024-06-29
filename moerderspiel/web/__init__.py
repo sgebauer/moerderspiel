@@ -143,11 +143,13 @@ def gamemaster(service: GameService):
 
 @app.get('/game/<game_id>/graph.svg')
 @with_game_service
-@needs_gamemaster_authentication
 def game_graph(service: GameService):
-    circles = Circle.by_game(service.game)
-    graph.generate_circles_graph(circles)
-    return flask.send_file(get_circles_graph_cache_path(circles))
+    if 'circle' in request.args:
+        circles = [service.get_circle(c) for c in request.args.getlist('circle')]
+    else:
+        circles = Circle.by_game(service.game)
+
+    return flask.send_file(graph.generate_circles_graph(circles, show_original_owners=service.game.ended))
 
 
 @app.get('/game/<game_id>/missions.pdf')

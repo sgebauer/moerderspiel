@@ -1,6 +1,9 @@
 import colorsys
+import itertools
 import math
 from typing import Tuple, Generator
+
+from moerderspiel.db import Circle
 
 
 def colorscheme(start_hue: float = 0.86) -> Generator[Tuple[int, int, int], None, None]:
@@ -17,3 +20,8 @@ def colorscheme(start_hue: float = 0.86) -> Generator[Tuple[int, int, int], None
         c += 1
         if c % 3 == 0:
             v = (v + phi) % 1.0
+
+
+def get_circle_color(circle: Circle) -> Tuple[int, int, int]:
+    index_in_game = sorted(circle.game.circles, key=lambda c: c.id).index(circle)
+    return next(itertools.islice(colorscheme(), index_in_game, None))
