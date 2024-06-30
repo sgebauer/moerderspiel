@@ -156,8 +156,7 @@ def game_graph(service: GameService):
 @with_game_service
 @needs_gamemaster_authentication
 def game_missions(service: GameService):
-    pdf.generate_game_mission_sheet(service.game)
-    return flask.send_file(pdf.get_game_mission_sheet_cache_path(service.game))
+    return flask.send_file(pdf.generate_game_mission_sheets(service.game))
 
 
 @app.get('/game')

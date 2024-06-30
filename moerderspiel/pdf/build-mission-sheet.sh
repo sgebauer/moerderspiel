@@ -9,5 +9,5 @@ readonly tempdir="$(mktemp -d)"
 trap "rm -rf '$tempdir'" EXIT
 
 cd "$tempdir"
-latexmk -silent -pdf "$sourcefile"
+latexmk -silent -pdf -lualatex "$sourcefile"
 install -D "$tempdir/mission.pdf" "$destfile"

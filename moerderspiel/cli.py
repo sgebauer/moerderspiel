@@ -36,8 +36,7 @@ def start_game(game: Game, **kwargs):
 
 
 def generate_mission_sheets(game: Game, **kwargs):
-    pdf.generate_game_mission_sheet(game)
-    print(pdf.get_game_mission_sheet_cache_path(game))
+    print(pdf.generate_game_mission_sheets(game))
 
 
 def generate_graph(game: Game, circle: List[str], **kwargs):
