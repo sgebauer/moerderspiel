@@ -65,12 +65,12 @@ def get_missions(game: Game, player: str = None, circle: str = None, **kwargs):
                 print(f"{player.name} in {circle.name}: {mission.victim.name}")
 
 
-def create_test_game(session: Session, game: str, password: str, players: int, circles: int, description: str,
+def create_test_game(session: Session, game: str, password: str, players: int, circles: int,
                      endtime: datetime.datetime, name: str = None, murders: int = None, **kwargs):
     name = name or game
     murders = murders or int(players * circles / 2)
 
-    service = GameService.create_new_game(session, id=game, title=name, description=description,
+    service = GameService.create_new_game(session, id=game, title=name,
                                           gamemaster_password=password, endtime=endtime,
                                           circles=list([f"Circle {i}" for i in range(circles)]))
     testgame.populate_test_game(service, players)
@@ -89,7 +89,6 @@ def main():
     s = subparsers.add_parser('create-game', help='Create a new game')
     s.set_defaults(function=create_game)
     s.add_argument('title', type=str, help='The fancy title of the game')
-    s.add_argument('description', type=str, help='The game description')
     s.add_argument('--circle', type=str, action='append', help='Add a circle with the given name', required=True)
     s.add_argument('--password', type=str, help='The game master password', required=True)
     s.add_argument('--endtime', type=datetime.datetime, help='When the game ends')
@@ -98,7 +97,6 @@ def main():
     s.set_defaults(function=create_test_game)
     s.add_argument('--password', type=str, help='The game master password', required=True)
     s.add_argument('--name', type=str, help='The fancy name of the game', default=None)
-    s.add_argument('--description', type=str, help='The game description', default="Test Game")
     s.add_argument('--players', type=int, help='The number of players to add to the game',
                    default=len(testgame.TESTGAME_PLAYERS))
     s.add_argument('--circles', type=int, help='The number of circles to create', default=2)
