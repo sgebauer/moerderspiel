@@ -19,6 +19,7 @@ def get_circles_graph_cache_path(circles: List[Circle]) -> str:
 def generate_circles_graph(circles: List[Circle], show_original_owners: bool = False) -> str:
     mass_murderers = Mission.mass_murderers_by_game(circles[0].game)
     dot = graphviz.Digraph()
+    dot.attr(bgcolor='#00000000')
 
     for circle in circles:
         color = '#%02x%02x%02x' % get_circle_color(circle)
