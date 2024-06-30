@@ -1,12 +1,14 @@
 from contextlib import contextmanager
 
+from werkzeug.security import generate_password_hash, check_password_hash
+
 from moerderspiel.config import DATABASE_URL
 
 import enum
 from datetime import datetime
 from typing import List, Optional
 
-from sqlalchemy import Engine, Enum, ForeignKey, inspect, select, desc, Select, create_engine, func
+from sqlalchemy import Engine, Enum, ForeignKey, inspect, select, desc, Select, create_engine, func, event
 from sqlalchemy.ext.orderinglist import ordering_list
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, Session
 from sqlalchemy.schema import CheckConstraint, UniqueConstraint
@@ -52,7 +54,7 @@ class Game(Base):
     """
     The game master's password.
     """
-    gamemaster_password: Mapped[str]  # TODO: Hashed?
+    gamemaster_password: Mapped[str]
 
     endtime: Mapped[Optional[datetime]]
 
@@ -79,7 +81,7 @@ class Game(Base):
         inspect(self).session.add(something)
 
     def check_gamemaster_password(self, password: str) -> bool:
-        return password == self.gamemaster_password
+        return check_password_hash(self.gamemaster_password, password)
 
 
 class Player(Base):
@@ -362,6 +364,11 @@ class Mission(Base):
             return []
         else:
             return list(p for p in game.players if len(cls.by_killer(p)) == max_kill_count)
+
+
+@event.listens_for(Game.gamemaster_password, 'set', named=True, retval=True)
+def hash_user_password(value: str, oldvalue: str, **kwargs):
+    return value if value == oldvalue else generate_password_hash(value)
 
 
 def connect_to_database() -> Engine:
