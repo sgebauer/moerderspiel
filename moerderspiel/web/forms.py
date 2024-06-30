@@ -5,6 +5,7 @@ from wtforms.fields.choices import SelectField
 from wtforms.fields.datetime import DateTimeLocalField
 from wtforms.fields.simple import PasswordField, TextAreaField
 
+from moerderspiel import constants
 from moerderspiel.db import Game
 
 
@@ -12,6 +13,7 @@ class AddPlayerForm(Form):
     form_id = "add-player"
 
     name = StringField('Spielername',
+                       [validators.Length(max=constants.MAX_PLAYER_NAME_LENGTH)],
                        id=form_id,
                        description="""
                         Der Spielername muss innerhalb des Spiels eindeutig sein.
@@ -19,7 +21,7 @@ class AddPlayerForm(Form):
                         Er wird auf den Auftragszetteln stehen.
                         """)
     group = StringField('Gruppe',
-                        [validators.optional()],
+                        [validators.optional(), validators.Length(max=constants.MAX_GROUP_NAME_LENGTH)],
                         description="""
                         Wenn du mit einer Gruppe von Menschen teilnimmst, die du bereits kennst (z.B. von deiner Schule
                         oder Uni), trage hier den Namen der Gruppe/Uni/etc. ein.
@@ -33,11 +35,13 @@ class CreateGameForm(Form):
     form_id = "create-game"
 
     game_id = StringField('Eindeutige Spiel-ID',
+                          [validators.Length(max=constants.MAX_GAME_ID_LENGTH)],
                           id=form_id,
                           description="""
                      Die Spiel-ID muss eindeutig sein und darf nur Kleinbuchstaben und Zahlen enthalten.
                      """)
     title = StringField('Titel des Spiels',
+                        [validators.Length(max=constants.MAX_GAME_TITLE_LENGTH)],
                         description="""
                        Der Titel des Spiels wird auf den Auftragszetteln und der Übersichtsseite verwendet.
                        """)
@@ -89,6 +93,7 @@ class RecordMurderForm(Form):
                                description="Der Code des Auftrags, der gerade erledigt wurde.")
 
     description = TextAreaField('Kreative Tatbeschreibung',
+                                [validators.Length(max=constants.MAX_MURDER_DESCRIPTION_LENGTH)],
                                 description="""
                                 Beschreibe kurz, wie der Mord passiert ist. Kreative Ausschmückungen sind erwünscht.
                                 """)

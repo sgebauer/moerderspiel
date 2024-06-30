@@ -2,13 +2,14 @@ from contextlib import contextmanager
 
 from werkzeug.security import generate_password_hash, check_password_hash
 
+from moerderspiel import constants
 from moerderspiel.config import DATABASE_URL
 
 import enum
 from datetime import datetime
 from typing import List, Optional
 
-from sqlalchemy import Engine, Enum, ForeignKey, inspect, select, desc, Select, create_engine, func, event
+from sqlalchemy import Engine, Enum, ForeignKey, inspect, select, desc, Select, create_engine, func, event, String
 from sqlalchemy.ext.orderinglist import ordering_list
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, Session
 from sqlalchemy.schema import CheckConstraint, UniqueConstraint
@@ -34,7 +35,7 @@ class Game(Base):
     """
     The unique ID of the game. This string will be visible to players and used in URLs, etc.
     """
-    id: Mapped[str] = mapped_column(primary_key=True)
+    id: Mapped[str] = mapped_column(String(constants.MAX_GAME_ID_LENGTH), primary_key=True)
 
     """
     The current state of the game.
@@ -44,7 +45,7 @@ class Game(Base):
     """
     The fancy title of the game.
     """
-    title: Mapped[str]
+    title: Mapped[str] = mapped_column(String(constants.MAX_GAME_TITLE_LENGTH))
 
     """
     Contact information of the game master. Used for notifications, but not disclosed to players.
@@ -101,12 +102,12 @@ class Player(Base):
     """
     The human-readable, 'fancy' name of the player.
     """
-    name: Mapped[str]
+    name: Mapped[str] = mapped_column(String(constants.MAX_PLAYER_NAME_LENGTH))
 
     """
     The group (e.g. school) that this player belongs to.
     """
-    group: Mapped[str]
+    group: Mapped[str] = mapped_column(String(constants.MAX_GROUP_NAME_LENGTH))
 
     """
     The player's contact information for notifications.
@@ -153,13 +154,13 @@ class Circle(Base):
     """
     The unique name of this circle in its game. The name is visible to players.
     """
-    name: Mapped[str]
+    name: Mapped[str] = mapped_column(String(constants.MAX_CIRCLE_NAME_LENGTH))
 
     """
     The 'circle set' to which this circle belongs. This is used for multi-games where different subsets of players
     play in different subsets of circles.
     """
-    set: Mapped[Optional[str]]
+    set: Mapped[Optional[str]] = mapped_column(String(constants.MAX_CIRCLE_SET_NAME_LENGTH))
 
     __table_args__ = (
         UniqueConstraint('game_id', 'name'),
@@ -222,7 +223,7 @@ class Mission(Base):
     """
     The description of how this mission was completed.
     """
-    completion_reason: Mapped[Optional[str]]
+    completion_reason: Mapped[Optional[str]] = mapped_column(String(constants.MAX_MURDER_DESCRIPTION_LENGTH))
 
     __table_args__ = (
         UniqueConstraint(circle_id, position),
