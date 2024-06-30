@@ -1,0 +1,21 @@
+{% extends "_base.html.j2" %}
+
+{% block head %}
+<style>
+    body .container {
+        max-width: 95vw;
+    }
+</style>
+{% endblock %}
+
+{% block header %}
+<h1>Mörderwall - <a href=".">{{ game.title }}</a></h1>
+{% endblock %}
+
+{% block main %}
+<div id="missions">
+    {% for mission in completed_missions -%}
+        {% include "partials/mission.html.j2" %}
+    {%- endfor %}
+</div>
+{% endblock %}

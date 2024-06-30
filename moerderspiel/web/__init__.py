@@ -152,6 +152,14 @@ def game_graph(service: GameService):
     return flask.send_file(graph.generate_circles_graph(circles, show_original_owners=service.game.ended))
 
 
+@app.get('/game/<game_id>/wall')
+@with_game_service
+def game_wall(service: GameService):
+    return render_template('wall.html.j2',
+                           game=service.game,
+                           completed_missions=Mission.completed_missions_in_game(service.game))
+
+
 @app.get('/game/<game_id>/missions.pdf')
 @with_game_service
 @needs_gamemaster_authentication
