@@ -78,8 +78,9 @@
 <main>
     {% with form = add_player_form %}
     <form method="post">
-        {{ render_field(form.name) }}
+        {{ render_field(form.name, id=form.form_id) }}
         {{ render_field(form.group) }}
+        {{ render_field(form.email) }}
         <button type="submit" name="form" value="{{ form.form_id }}">Spieler eintragen</button>
     </form>
     {% endwith %}

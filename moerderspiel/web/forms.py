@@ -29,6 +29,11 @@ class AddPlayerForm(Form):
                         Das Spiel wird aber vermeiden, dir als ersten Auftrag jemanden aus deiner eigenen Gruppe zu
                         geben.
                         """)
+    email = StringField('E-Mail-Adresse',
+                        [validators.optional(), validators.Email(check_deliverability=True)],
+                        description="""
+                        Du kannst dir optional deine Mordaufträge per E-Mail zuschicken lassen.
+                        """)
 
 
 class CreateGameForm(Form):

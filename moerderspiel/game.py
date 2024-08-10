@@ -1,6 +1,7 @@
 import random
 
-from moerderspiel.db import GameState, Game, Circle, Player, Mission
+from moerderspiel import notification, pdf
+from moerderspiel.db import GameState, Game, Circle, Player, Mission, NotificationAddressType, NotificationAddress
 
 from datetime import datetime
 from sqlalchemy.orm import Session
@@ -50,6 +51,17 @@ class GameService:
         player = Player(game=self.game, name=name, **kwargs)
         self.game.add(player)
         return player
+
+    def add_notification_address(self, player: str | Player, type: NotificationAddressType, address: str):
+        self.game.add(NotificationAddress(
+            player=self.get_player(player),
+            type=type,
+            address=address,
+            active=True
+        ))
+
+        if self.game.state == GameState.running:
+            send_mission_update(player)
 
     def add_circle(self, name: str, **kwargs) -> Circle:
         if self.game.state != GameState.new:
@@ -107,6 +119,9 @@ class GameService:
 
         self.game.state = GameState.running
 
+        for player in self.game.players:
+            send_mission_update(player)
+
     def record_murder(self, killer: str | Player, victim: str | Player, circle: str | Circle, when: datetime,
                       reason: str, code: str) -> None:
         killer = self.get_player(killer)
@@ -132,7 +147,10 @@ class GameService:
         elif killer_mission.completed and killer_mission.completion_date < when:
             raise GameError("Killer was already dead at that time")
 
+        owner = mission.current_owner
         mission.complete(killer, when, reason)
+        send_mission_update(owner)
+        send_mission_update(victim)
 
     def end_game(self):
         if self.game.state != GameState.running:
@@ -167,3 +185,11 @@ class GameService:
                 service.add_circle(name=circle)
 
         return service
+
+
+def send_mission_update(player: Player):
+    missions = sorted(Mission.achievable_missions_by_current_owner(player), key=lambda m: m.circle_id)
+    if missions:
+        for address in player.notification_addresses:
+            if address.active:
+                notification.email.send_mission_update(address.address, pdf.generate_mission_sheets(missions), player.game.title)

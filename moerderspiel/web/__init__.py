@@ -1,13 +1,13 @@
 from functools import wraps
 
 import flask
+import jwt
 from flask import Flask, render_template, send_from_directory, request, url_for, redirect, flash, abort, session
 from flask_sqlalchemy import SQLAlchemy
 
-from moerderspiel.db import Base, Game, Mission, Circle
-from moerderspiel import config, graph, pdf
+from moerderspiel.db import Base, Game, Mission, Circle, Player, NotificationAddressType
+from moerderspiel import config, graph, pdf, notification
 from moerderspiel.game import GameService, GameError
-from moerderspiel.graph import get_circles_graph_cache_path
 from moerderspiel.web.forms import AddPlayerForm, CreateGameForm, RecordMurderForm, GameMasterLoginForm
 
 app = Flask(__name__)
@@ -76,6 +76,10 @@ def game(service: GameService):
                 for circle in service.game.circles:
                     service.add_player_to_circle(player, circle)
                 db.session.commit()
+
+                if add_player_form.email.data:
+                    send_confirmation_message(player, NotificationAddressType.email, add_player_form.email.data)
+
                 flash('Spieler eingetragen', 'success')
                 return redirect(url_for('game', game_id=service.game.id, _anchor='top'))
             except GameError as e:
@@ -178,3 +182,27 @@ def game_redirect():
 @app.route('/css/<path:path>')
 def css(path):
     return send_from_directory('static/css', path)
+
+
+@app.get('/confirm_address')
+def confirm_address():
+    if 'token' not in request.args:
+        abort(400)
+
+    data = jwt.decode(request.args['token'], key=app.secret_key, algorithms=["HS256"])
+    service = GameService(Game.by_id(db.session, data['game']))
+    service.add_notification_address(data['player'], NotificationAddressType[data['type']], data['address'])
+    db.session.commit()
+
+    flash('Benachrichtigungs-Adresse bestätigt', 'success')
+    return redirect(url_for('game', game_id=service.game.id))
+
+
+def send_confirmation_message(player: Player, address_type: NotificationAddressType, address: str):
+    data = dict(game=player.game_id, player=player.name, type=address_type, address=address)
+    token = jwt.encode(data, app.secret_key, algorithm="HS256")
+
+    notification.email.send_confirmation_message(
+        address=address,
+        url=url_for('confirm_address', _external=True, token=token),
+        game_title=player.game.title)

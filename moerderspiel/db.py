@@ -109,11 +109,6 @@ class Player(Base):
     """
     group: Mapped[str] = mapped_column(String(constants.MAX_GROUP_NAME_LENGTH))
 
-    """
-    The player's contact information for notifications.
-    """
-    #contact: Mapped[Optional[JSON]]
-
     __table_args__ = (
         UniqueConstraint('game_id', 'name'),
     )
@@ -123,6 +118,7 @@ class Player(Base):
                                                             primaryjoin="Player.id == Mission.victim_id")
     completed_missions: Mapped[List["Mission"]] = relationship(back_populates="killer",
                                                                primaryjoin="Player.id == Mission.killer_id")
+    notification_addresses: Mapped[List["NotificationAddress"]] = relationship(back_populates="player")
 
     @property
     def alive(self):
@@ -343,6 +339,11 @@ class Mission(Base):
         return sum([cls.achievable_missions_in_circle(c) for c in game.circles], [])
 
     @classmethod
+    def achievable_missions_by_current_owner(cls, player: Player) -> List['Mission']:
+        return list(v.get_next_uncompleted() for v in player.victim_missions if
+                    (not v.completed) and (v.get_next_uncompleted() != v))
+
+    @classmethod
     def completed_missions_in_circle(cls, circle: Circle) -> List['Mission']:
         return list(circle._query(select(cls).where(cls.circle == circle).where(cls.completion_date != None)).all())
 
@@ -365,6 +366,21 @@ class Mission(Base):
             return []
         else:
             return list(p for p in game.players if len(cls.by_killer(p)) == max_kill_count)
+
+
+class NotificationAddressType(enum.StrEnum):
+    email = enum.auto()
+
+
+class NotificationAddress(Base):
+    __tablename__ = "notification_address"
+
+    player_id: Mapped[int] = mapped_column(ForeignKey(Player.id), primary_key=True)
+    type: Mapped[NotificationAddressType] = mapped_column(Enum(NotificationAddressType), primary_key=True)
+    address: Mapped[str] = mapped_column(primary_key=True)
+    active: Mapped[bool]
+
+    player: Mapped[Player] = relationship(back_populates="notification_addresses")
 
 
 @event.listens_for(Game.gamemaster_password, 'set', named=True, retval=True)
