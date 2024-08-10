@@ -121,8 +121,12 @@ class Player(Base):
     notification_addresses: Mapped[List["NotificationAddress"]] = relationship(back_populates="player")
 
     @property
-    def alive(self):
+    def alive(self) -> bool:
         return any(m for m in self.victim_missions if not m.completed)
+
+    @property
+    def notifiable(self) -> bool:
+        return any(n for n in self.notification_addresses if n.active)
 
     @classmethod
     def by_game_and_name(cls, game: Game, name: str) -> 'Player':
@@ -302,7 +306,7 @@ class Mission(Base):
     def game(self) -> Game:
         return self.circle.game
 
-    def complete(self, killer: Player, when: datetime, reason: str) -> None:
+    def complete(self, killer: Player | None, when: datetime, reason: str) -> None:
         self.killer = killer
         self.completion_date = when
         self.completion_reason = reason
@@ -339,9 +343,12 @@ class Mission(Base):
         return sum([cls.achievable_missions_in_circle(c) for c in game.circles], [])
 
     @classmethod
+    def achievable_missions_by_victim(cls, victim: Player) -> List['Mission']:
+        return list(v for v in victim.victim_missions if (not v.completed) and (v.get_next_uncompleted() != v))
+
+    @classmethod
     def achievable_missions_by_current_owner(cls, player: Player) -> List['Mission']:
-        return list(v.get_next_uncompleted() for v in player.victim_missions if
-                    (not v.completed) and (v.get_next_uncompleted() != v))
+        return list(v.get_next_uncompleted() for v in cls.achievable_missions_by_victim(player))
 
     @classmethod
     def completed_missions_in_circle(cls, circle: Circle) -> List['Mission']:

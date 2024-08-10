@@ -10,9 +10,9 @@
 
         <form method="post" class="grid">
             {% if not game.started %}
-            <button class="primary" name="game-state-action" value="start">Spiel starten</button>
+            <button class="primary" name="action" value="start-game">Spiel starten</button>
             {% elif not game.ended %}
-            <button class="primary" name="game-state-action" value="end">Spiel abschließen</button>
+            <button class="primary" name="action" value="end-game">Spiel abschließen</button>
             {% endif %}
 
             {% if game.started %}
@@ -38,6 +38,7 @@
                         <th>Gruppe</th>
                         <th>Morde</th>
                         <th>Leben</th>
+                        <th>Aktionen</th>
                     </tr>
                 </thead>
                 {% for player in game.players %}
@@ -46,6 +47,26 @@
                     <td>{{ player.group }}</td>
                     <td>{{ player.completed_missions | list | length }}</td>
                     <td>{{ player.victim_missions | rejectattr('completed') | list | length }}</td>
+                    <td>
+                        <form method="post">
+                            <input type="text" style="display: none;" name="player" value="{{ player.name }}"/>
+                            {% if game.started %}
+                            <a role="button" class="primary" target="_blank" title="Aufträge herunterladen"
+                               href="{{ url_for('player_missions', game_id=game.id, player_name=player.name) }}"
+                               {{ '' if player.alive else 'disabled' }}>
+                                {{ icon("file-document-outline") }}
+                            </a>
+                            <button class="primary" name="action" value="resend-player-missions" title="Aufträge neu versenden"
+                                    {{ '' if player.alive and player.notifiable else 'disabled' }}>
+                                {{ icon("email-sync-outline") }}
+                            </button>
+                            <button class="contrast" name="action" value="kick-player" title="Spieler kicken"
+                                    {{ '' if player.alive else 'disabled' }}>
+                                {{ icon("account-cancel-outline") }}
+                            </button>
+                            {% endif %}
+                        </form>
+                    </td>
                 </tr>
                 {% endfor %}
             </table>
@@ -112,7 +133,7 @@
                 {% endfor %}
             </table>
             <div role="group">
-                <button class="primary" name="circle-action" value="add">Kreis hinzufügen</button>
+                <button class="primary" name="action" value="add-circle">Kreis hinzufügen</button>
             </div>
         </form>
         {% endif %}

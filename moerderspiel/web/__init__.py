@@ -1,3 +1,4 @@
+import datetime
 from functools import wraps
 
 import flask
@@ -122,21 +123,20 @@ def game(service: GameService):
 @with_game_service
 @needs_gamemaster_authentication
 def gamemaster(service: GameService):
-    if request.method == 'POST' and 'game-state-action' in request.form:
+    if request.method == 'POST' and 'action' in request.form:
         try:
-            if request.form['game-state-action'] == 'start':
+            if request.form['action'] == 'start-game':
                 service.start_game()
-            elif request.form['game-state-action'] == 'end':
+            elif request.form['action'] == 'end-game':
                 service.end_game()
-            db.session.commit()
-        except GameError as e:
-            flash(str(e), 'error')
-    elif request.method == 'POST' and 'circle-action' in request.form:
-        try:
-            if request.form['circle-action'] == 'add':
+            elif request.form['action'] == 'add-circle':
                 circle = service.add_circle(f"Kreis {len(service.game.circles)}")
                 for player in service.game.players:
                     service.add_player_to_circle(player, circle)
+            elif request.form['action'] == 'kick-player':
+                service.kick_player(request.form['player'], datetime.datetime.now(), "Spieler wurde gekickt")
+            elif request.form['action'] == 'resend-player-missions':
+                service.send_mission_update(request.form['player'])
             db.session.commit()
         except GameError as e:
             flash(str(e), 'error')
@@ -171,6 +171,13 @@ def game_missions(service: GameService):
     return flask.send_file(pdf.generate_game_mission_sheets(service.game))
 
 
+@app.get('/game/<game_id>/missions/<player_name>.pdf')
+@with_game_service
+@needs_gamemaster_authentication  # For now, until player authentication is implemented
+def player_missions(service: GameService, player_name: str):
+    return flask.send_file(pdf.generate_mission_sheets(service.get_current_missions(player_name)))
+
+
 @app.get('/game')
 def game_redirect():
     if 'id' not in request.args:
@@ -182,6 +189,11 @@ def game_redirect():
 @app.route('/css/<path:path>')
 def css(path):
     return send_from_directory('static/css', path)
+
+
+@app.route('/img/<path:path>')
+def img(path):
+    return send_from_directory('static/img', path)
 
 
 @app.get('/confirm_address')

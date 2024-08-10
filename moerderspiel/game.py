@@ -61,7 +61,7 @@ class GameService:
         ))
 
         if self.game.state == GameState.running:
-            send_mission_update(player)
+            self.send_mission_update(player)
 
     def add_circle(self, name: str, **kwargs) -> Circle:
         if self.game.state != GameState.new:
@@ -120,7 +120,7 @@ class GameService:
         self.game.state = GameState.running
 
         for player in self.game.players:
-            send_mission_update(player)
+            self.send_mission_update(player)
 
     def record_murder(self, killer: str | Player, victim: str | Player, circle: str | Circle, when: datetime,
                       reason: str, code: str) -> None:
@@ -149,8 +149,31 @@ class GameService:
 
         owner = mission.current_owner
         mission.complete(killer, when, reason)
-        send_mission_update(owner)
-        send_mission_update(victim)
+        self.send_mission_update(owner)
+        self.send_mission_update(victim)
+
+    def kick_player(self, player: str | Player, when: datetime, reason: str):
+        players_to_notify = set()
+
+        for mission in Mission.achievable_missions_by_victim(self.get_player(player)):
+            players_to_notify.add(mission.current_owner)
+            mission.complete(None, when, reason)
+
+        for p in players_to_notify:
+            self.send_mission_update(p)
+
+    def get_current_missions(self, owner: str | Player):
+        owner = self.get_player(owner)
+        return sorted(Mission.achievable_missions_by_current_owner(owner), key=lambda m: m.circle_id)
+
+    def send_mission_update(self, player: str | Player):
+        player = self.get_player(player)
+        missions = self.get_current_missions(player)
+        if missions:
+            for address in player.notification_addresses:
+                if address.active:
+                    notification.email.send_mission_update(address.address, pdf.generate_mission_sheets(missions),
+                                                           self.game.title)
 
     def end_game(self):
         if self.game.state != GameState.running:
@@ -185,11 +208,3 @@ class GameService:
                 service.add_circle(name=circle)
 
         return service
-
-
-def send_mission_update(player: Player):
-    missions = sorted(Mission.achievable_missions_by_current_owner(player), key=lambda m: m.circle_id)
-    if missions:
-        for address in player.notification_addresses:
-            if address.active:
-                notification.email.send_mission_update(address.address, pdf.generate_mission_sheets(missions), player.game.title)
