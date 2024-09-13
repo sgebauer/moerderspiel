@@ -97,6 +97,7 @@
             <summary role="button" class="secondary">
                 {{- circle.name -}}
                 {{- '(' ~ circle.set ~ ')' if circle.set else '' -}}
+                {{- ' - ' ~ (circle.missions | rejectattr('completed') | list | length) ~ ' Lebende Spieler' -}}
             </summary>
             <table>
                 <thead>
