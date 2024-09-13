@@ -2,7 +2,7 @@ from contextlib import contextmanager
 
 from werkzeug.security import generate_password_hash, check_password_hash
 
-from moerderspiel import constants
+from moerderspiel import constants, wordgen
 from moerderspiel.config import DATABASE_URL
 
 import enum
@@ -293,7 +293,11 @@ class Mission(Base):
 
     @property
     def code(self) -> str:
-        return "dummycode"  # TODO
+        """
+        The secret code needed to complete this mission.
+        """
+        return wordgen.generate_secret_code(salt=f"{self.victim.game.id}/{self.victim_id}/{self.circle_id}",
+                                            length=constants.MISSION_CODE_LENGTH)
 
     @property
     def completed(self) -> bool:

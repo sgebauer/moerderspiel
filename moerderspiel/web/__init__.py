@@ -14,6 +14,7 @@ from moerderspiel.web.forms import AddPlayerForm, CreateGameForm, RecordMurderFo
 app = Flask(__name__)
 app.config.from_prefixed_env()
 app.config["SQLALCHEMY_DATABASE_URI"] = config.DATABASE_URL
+app.config["SECRET_KEY"] = config.SECRET_KEY
 db = SQLAlchemy(app, model_class=Base)
 with app.app_context():
     db.create_all()

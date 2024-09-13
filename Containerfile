@@ -4,7 +4,7 @@ WORKDIR /opt/moerderspiel
 
 COPY requirements.txt .
 RUN apt-get update && \
-    apt-get --yes --no-install-recommends install latexmk texlive-latex-extra texlive-fonts-recommended poppler-utils graphviz && \
+    apt-get --yes --no-install-recommends install latexmk texlive-latex-extra texlive-fonts-recommended poppler-utils graphviz wngerman && \
     pip3 install --no-cache-dir -r requirements.txt && \
     pip3 install gunicorn~=22.0.0
 
