@@ -78,6 +78,19 @@ class GameService:
 
         return circle
 
+    def delete_circle(self, circle: Circle | str):
+        if self.game.started:
+            raise GameError("Game has already been started")
+
+        self.get_circle(circle).delete()
+
+    def delete_player(self, player: Player | str):
+        if self.game.started:
+            raise GameError("Game has already been started")
+
+        # TODO: Handle pending address verification requests
+        self.get_player(player).delete()
+
     def add_player_to_circle(self, player: str | Player, circle: str | Circle):
         player = self.get_player(player)
         circle = self.get_circle(circle)

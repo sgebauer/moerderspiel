@@ -132,10 +132,14 @@ def gamemaster(service: GameService):
                 service.start_game()
             elif request.form['action'] == 'end-game':
                 service.end_game()
+            elif request.form['action'] == 'delete-player':
+                service.delete_player(request.form['player'])
             elif request.form['action'] == 'kick-player':
                 service.kick_player(request.form['player'], datetime.datetime.now(), "Spieler wurde gekickt")
             elif request.form['action'] == 'resend-player-missions':
                 service.send_mission_update(request.form['player'])
+            elif request.form['action'] == 'delete-circle':
+                service.delete_circle(request.form['circle'])
             db.session.commit()
             return redirect(url_for('gamemaster', game_id=service.game.id, _anchor='top'))
         except GameError as e:

@@ -64,6 +64,10 @@
                                     {{ '' if player.alive else 'disabled' }}>
                                 {{ icon("account-cancel-outline") }}
                             </button>
+                            {% else %}
+                            <button class="contrast" name="action" value="delete-player" title="Spieler löschen">
+                                {{ icon("trash-can-outline") }}
+                            </button>
                             {% endif %}
                         </form>
                     </td>
@@ -121,14 +125,25 @@
                     <tr>
                         <th>Kreis</th>
                         <th>Kreis-Set</th>
-                        <th></th>
+                        <th>Spieler</th>
+                        <th>Aktionen</th>
                     </tr>
                 </thead>
                 {% for circle in game.circles %}
                 <tr>
                     <td>{{ circle.name }}</td>
                     <td>{{ circle.set | default('', true) }}</td>
-                    <td><a role="button" class="primary outline" disabled>X</a></td>
+                    <td>{{ circle.missions | list | length }}</td>
+                    <td>
+                        <form method="post">
+                            <input type="text" style="display: none;" name="circle" value="{{ circle.name }}"/>
+                            {% if not game.started %}
+                            <button class="contrast" name="action" value="delete-circle" title="Kreis löschen">
+                                {{ icon("trash-can-outline") }}
+                            </button>
+                            {% endif %}
+                        </form>
+                    </td>
                 </tr>
                 {% endfor %}
             </table>

@@ -22,6 +22,9 @@ class Base(DeclarativeBase):
     def flush_changes(self):
         return inspect(self).session.flush()
 
+    def delete(self):
+        inspect(self).session.delete(self)
+
 
 class GameState(enum.IntEnum):
     new = 0,
@@ -115,10 +118,12 @@ class Player(Base):
 
     game: Mapped[Game] = relationship(back_populates="players")
     victim_missions: Mapped[List["Mission"]] = relationship(back_populates="victim",
-                                                            primaryjoin="Player.id == Mission.victim_id")
+                                                            primaryjoin="Player.id == Mission.victim_id",
+                                                            cascade="delete")
     completed_missions: Mapped[List["Mission"]] = relationship(back_populates="killer",
                                                                primaryjoin="Player.id == Mission.killer_id")
-    notification_addresses: Mapped[List["NotificationAddress"]] = relationship(back_populates="player")
+    notification_addresses: Mapped[List["NotificationAddress"]] = relationship(back_populates="player",
+                                                                               cascade="delete")
 
     @property
     def alive(self) -> bool:
@@ -168,7 +173,7 @@ class Circle(Base):
 
     game: Mapped[Game] = relationship(back_populates="circles")
     missions: Mapped[List["Mission"]] = relationship(back_populates="circle", order_by="Mission.position",
-                                                     collection_class=ordering_list("position"))
+                                                     collection_class=ordering_list("position"), cascade="delete")
 
     @classmethod
     def by_game_and_name(cls, game: Game, name: str) -> 'Circle':
