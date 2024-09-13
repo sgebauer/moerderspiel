@@ -1,11 +1,14 @@
 \documentclass[8pt]{extarticle}
-\usepackage{pifont}
 
 % This size fits 12 missions on one portrait A4 sheet
 \usepackage[paperheight=74.25mm,paperwidth=70mm,margin=4mm]{geometry}
 
+\usepackage{pifont}
 \usepackage{catchfile}
 \newcommand{\getenv}[1]{\CatchFileEdef{\temp}{"|kpsewhich --var-value #1"}{\endlinechar=-1}\temp}
+
+\usepackage{fontspec}
+\setmainfont{Noto Serif}
 
 \begin{document}
 
