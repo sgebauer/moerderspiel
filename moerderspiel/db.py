@@ -178,6 +178,10 @@ class Circle(Base):
     def by_game(cls, game: Game) -> List['Circle']:
         return list(game._query(select(cls).where(cls.game == game)).all())
 
+    @classmethod
+    def by_game_and_set(cls, game: Game, set: str) -> List['Circle']:
+        return list(game._query(select(cls).where(cls.game == game).where(cls.set == set)).all())
+
 
 class Mission(Base):
     """

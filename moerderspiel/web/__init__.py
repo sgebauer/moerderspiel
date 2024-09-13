@@ -9,7 +9,7 @@ from flask_sqlalchemy import SQLAlchemy
 from moerderspiel.db import Base, Game, Mission, Circle, Player, NotificationAddressType
 from moerderspiel import config, graph, pdf, notification
 from moerderspiel.game import GameService, GameError
-from moerderspiel.web.forms import AddPlayerForm, CreateGameForm, RecordMurderForm, GameMasterLoginForm
+from moerderspiel.web.forms import AddPlayerForm, CreateGameForm, RecordMurderForm, GameMasterLoginForm, AddCircleForm
 
 app = Flask(__name__)
 app.config.from_prefixed_env()
@@ -124,26 +124,37 @@ def game(service: GameService):
 @with_game_service
 @needs_gamemaster_authentication
 def gamemaster(service: GameService):
+    add_circle_form = AddCircleForm(request.form)
+
     if request.method == 'POST' and 'action' in request.form:
         try:
             if request.form['action'] == 'start-game':
                 service.start_game()
             elif request.form['action'] == 'end-game':
                 service.end_game()
-            elif request.form['action'] == 'add-circle':
-                circle = service.add_circle(f"Kreis {len(service.game.circles)}")
-                for player in service.game.players:
-                    service.add_player_to_circle(player, circle)
             elif request.form['action'] == 'kick-player':
                 service.kick_player(request.form['player'], datetime.datetime.now(), "Spieler wurde gekickt")
             elif request.form['action'] == 'resend-player-missions':
                 service.send_mission_update(request.form['player'])
             db.session.commit()
+            return redirect(url_for('gamemaster', game_id=service.game.id, _anchor='top'))
         except GameError as e:
             flash(str(e), 'error')
+    elif request.method == 'POST' and request.form['form'] == add_circle_form.form_id:
+        if add_circle_form.validate():
+            try:
+                circle = service.add_circle(add_circle_form.name.data, set=add_circle_form.set.data)
+                missions = sum((c.missions for c in Circle.by_game_and_set(service.game, circle.set)), start=[])
+                for player in set(m.victim for m in missions):
+                    service.add_player_to_circle(player, circle)
+                db.session.commit()
+                return redirect(url_for('gamemaster', game_id=service.game.id, _anchor='top'))
+            except GameError as e:
+                flash(str(e), 'error')
 
     return render_template('gamemaster.html.j2',
-                           game=service.game)
+                           game=service.game,
+                           add_circle_form=add_circle_form)
 
 
 @app.get('/game/<game_id>/graph.svg')

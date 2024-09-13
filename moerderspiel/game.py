@@ -63,7 +63,7 @@ class GameService:
         if self.game.state == GameState.running:
             self.send_mission_update(player)
 
-    def add_circle(self, name: str, **kwargs) -> Circle:
+    def add_circle(self, name: str, players: List[Player | str] = None, **kwargs) -> Circle:
         if self.game.state != GameState.new:
             raise GameError("Game has already been started")
         elif Circle.by_game_and_name(self.game, name):
@@ -71,6 +71,11 @@ class GameService:
 
         circle = Circle(game=self.game, name=name, **kwargs)
         self.game.add(circle)
+
+        if players:
+            for player in players:
+                self.add_player_to_circle(player, circle)
+
         return circle
 
     def add_player_to_circle(self, player: str | Player, circle: str | Circle):

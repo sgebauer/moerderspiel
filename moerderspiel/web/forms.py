@@ -69,6 +69,24 @@ class CreateGameForm(Form):
     confirm_password = PasswordField('Passwort bestätigen')
 
 
+class AddCircleForm(Form):
+    form_id = "add-circle"
+
+    name = StringField('Name des Kreises',
+                       [validators.Length(max=constants.MAX_CIRCLE_NAME_LENGTH)],
+                       id=form_id,
+                       description="""
+                       Der Name muss innerhalb des Spiels eindeutig sein.
+                       """)
+
+    set = StringField('Kreis-Set',
+                      [validators.optional(), validators.Length(max=constants.MAX_CIRCLE_SET_NAME_LENGTH)],
+                      description="""
+                      Ein "Set" fasst in einem Multispiel mehrere Kreise zusammen. Falls alle Spieler in allen Kreisen
+                      spielen, lasse dieses Feld leer.
+                      """)
+
+
 class GameMasterLoginForm(Form):
     form_id = "gamemaster-login"
 
