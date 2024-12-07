@@ -26,10 +26,10 @@ class Base(DeclarativeBase):
         inspect(self).session.delete(self)
 
 
-class GameState(enum.IntEnum):
-    new = 0,
-    running = 1,
-    ended = 2
+class GameState(enum.StrEnum):
+    new = enum.auto(),
+    running = enum.auto(),
+    ended = enum.auto(),
 
 
 class Game(Base):
@@ -43,7 +43,7 @@ class Game(Base):
     """
     The current state of the game.
     """
-    state: Mapped[GameState] = mapped_column(Enum(GameState))  # TODO Get this mapped to an int in the database
+    state: Mapped[GameState] = mapped_column(Enum(GameState))
 
     """
     The fancy title of the game.
