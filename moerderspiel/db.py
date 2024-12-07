@@ -265,7 +265,6 @@ class Mission(Base):
         return self._query(basequery.where(Mission.position > self.position)).one_or_none() \
             or self._query(basequery.where(Mission.position < self.position)).one_or_none()
 
-    # TODO: Previous and next should probably be reflexive relationships instead
     @property
     def previous(self) -> 'Mission':
         """
@@ -369,8 +368,7 @@ class Mission(Base):
 
     @classmethod
     def completed_missions_in_game(cls, game: Game) -> List['Mission']:
-        # TODO: This can be done in a single query
-        return sum([cls.completed_missions_in_circle(c) for c in game.circles], [])
+        return list(game._query(select(cls).where(cls.circle.has(Circle.game == game)).where(cls.completion_date != None)).all())
 
     @classmethod
     def by_killer(cls, killer: Player) -> List['Mission']:
