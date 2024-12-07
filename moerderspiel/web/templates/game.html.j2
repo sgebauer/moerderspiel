@@ -11,9 +11,7 @@
         <div role="row">
             <article>Massenmörder</article>
             <article>
-                {% for player in mass_murderers %}
-                    {{ player.name }}{{ ', ' if not loop.last else '' }}
-                {% endfor %}
+                {{ mass_murderers | map(attribute='name') | join(', ') }}
                 ({{ completed_missions | selectattr('killer', 'eq', mass_murderers[0]) | list | length }} Morde)
             </article>
         </div>

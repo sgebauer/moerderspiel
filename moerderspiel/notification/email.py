@@ -12,7 +12,8 @@ def send_message(to: str, subject: str, body: str, attachment: bytes = None, att
     msg['To'] = to
     msg.set_content(body)
     if attachment:
-        msg.add_attachment(attachment, maintype=attachment_type, subtype=attachment_subtype, filename=attachment_filename)
+        msg.add_attachment(attachment, maintype=attachment_type, subtype=attachment_subtype,
+                           filename=attachment_filename)
 
     if config.EMAIL_SMTP_HOST.startswith('/'):
         with LMTP(config.EMAIL_SMTP_HOST) as lmtp:

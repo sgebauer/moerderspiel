@@ -55,7 +55,8 @@ def index():
                     gamemaster_password=create_game_form.password.data,
                 )
                 db.session.commit()
-                session['gamemaster_authenticated'] = (session.get('gamemaster_authenticated') or []) + [service.game.id]
+                session['gamemaster_authenticated'] = (session.get('gamemaster_authenticated') or []) + [
+                    service.game.id]
                 return redirect(url_for('gamemaster', game_id=service.game.id, _anchor='top'))
             except GameError as e:
                 flash(str(e), 'error')
@@ -104,7 +105,8 @@ def game(service: GameService):
         if gamemaster_login_form.validate():
             try:
                 if service.check_gamemaster_password(gamemaster_login_form.password.data):
-                    session['gamemaster_authenticated'] = (session.get('gamemaster_authenticated') or []) + [service.game.id]
+                    session['gamemaster_authenticated'] = (session.get('gamemaster_authenticated') or []) + [
+                        service.game.id]
                     return redirect(url_for('gamemaster', game_id=service.game.id, _anchor='top'))
                 else:
                     flash('Falsches Passwort', 'error')
