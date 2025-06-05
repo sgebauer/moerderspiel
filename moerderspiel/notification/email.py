@@ -23,6 +23,8 @@ def send_message(to: str, subject: str, body: str, attachment: bytes = None, att
         with SMTP(config.EMAIL_SMTP_HOST, port=int(config.EMAIL_SMTP_PORT)) as smtp:
             smtp.starttls()
             smtp.ehlo(config.EMAIL_HELO_HOSTNAME)
+            if config.EMAIL_SMTP_USER and config.EMAIL_SMTP_PASSWORD:
+                smtp.login(config.EMAIL_SMTP_USER, config.EMAIL_SMTP_PASSWORD)
             smtp.send_message(msg)
             smtp.quit()
 

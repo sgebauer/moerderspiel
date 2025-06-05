@@ -12,4 +12,6 @@ WORDGEN_CORPUS = os.environ.get('WORDGEN_CORPUS', default='/usr/share/dict/ngerm
 EMAIL_FROM = os.environ.get('EMAIL_FROM', default=None)
 EMAIL_SMTP_HOST = os.environ.get('EMAIL_SMTP_HOST', default="127.0.0.1")
 EMAIL_SMTP_PORT = os.environ.get('EMAIL_SMTP_PORT', default="25")
+EMAIL_SMTP_USER = os.environ.get('EMAIL_SMTP_USER', default='')
+EMAIL_SMTP_PASSWORD = os.environ.get('EMAIL_SMTP_PASSWORD', default='')
 EMAIL_HELO_HOSTNAME = os.environ.get('EMAIL_HELO_HOSTNAME', default=socket.getfqdn())
