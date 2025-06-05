@@ -72,6 +72,17 @@ class GameService:
         circle = Circle(game=self.game, name=name, **kwargs)
         self.game.add(circle)
 
+        # If no players are given explicitly, automatically populate the circle with a sensible set of players
+        if players is None:
+            similar_circles = Circle.by_game_and_set(self.game, circle.set)
+            similar_circles.remove(circle)
+            if similar_circles:
+                # When we "expand" an existing set by another circle, add all players currently in the set
+                players = set(m.victim for m in sum((c.missions for c in similar_circles), start=[]))
+            else:
+                # When there are no circles from the same set, add everyone by default
+                players = Player.by_game(self.game)
+
         if players:
             for player in players:
                 self.add_player_to_circle(player, circle)

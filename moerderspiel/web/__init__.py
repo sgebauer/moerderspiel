@@ -149,10 +149,7 @@ def gamemaster(service: GameService):
     elif request.method == 'POST' and request.form['form'] == add_circle_form.form_id:
         if add_circle_form.validate():
             try:
-                circle = service.add_circle(add_circle_form.name.data, set=add_circle_form.set.data)
-                missions = sum((c.missions for c in Circle.by_game_and_set(service.game, circle.set)), start=[])
-                for player in set(m.victim for m in missions):
-                    service.add_player_to_circle(player, circle)
+                service.add_circle(add_circle_form.name.data, set=add_circle_form.set.data, players=None)
                 db.session.commit()
                 return redirect(url_for('gamemaster', game_id=service.game.id, _anchor='top'))
             except GameError as e:
