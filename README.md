@@ -10,7 +10,7 @@ Building and Running Locally
 ```shell
 podman build -t moerderspiel .
 podman run --rm -it --volume=moerderspiel-data:/data --volume=moerderspiel-cache:/cache \
-    --env=BASE_URL=https://moerderspiel.example.com --env=FLASK_SECRET_KEY=verysecret \
+    --env=BASE_URL=https://moerderspiel.example.com --env=SECRET_KEY=verysecret \
     --env=EMAIL_SMTP_HOST=mail.example.com --env=EMAIL_FROM=moerderspiel@example.com \
     --env=EMAIL_HELO_HOSTNAME=example.com moerderspiel-ng
 ```
