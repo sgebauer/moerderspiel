@@ -31,6 +31,7 @@ class AddPlayerForm(Form):
                         """)
     email = StringField('E-Mail-Adresse',
                         [validators.optional(), validators.Email(check_deliverability=True)],
+                        filters=[lambda s: s if s is None else str.strip(s)],
                         description="""
                         Du kannst dir optional deine Mordaufträge per E-Mail zuschicken lassen.
                         """)
