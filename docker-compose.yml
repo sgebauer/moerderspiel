@@ -1,0 +1,30 @@
+services:
+  moerderspiel:
+    #image: ghcr.io/tionis/moerderspiel:latest
+    build:
+      context: .
+      dockerfile: Containerfile
+    hostname: moerderspiel
+    container_name: moerderspiel
+    restart: unless-stopped
+    ports: 
+      - "8000:8000"
+    environment:
+      PORT: "8000"
+      BASE_URL: ${BASE_URL}
+      SECRET_KEY: ${SECRET_KEY}
+      EMAIL_SMTP_HOST: ${EMAIL_SMTP_HOST}
+      EMAIL_SMTP_PORT: ${EMAIL_SMTP_PORT}
+      EMAIL_SMTP_USER: ${EMAIL_SMTP_USER}
+      EMAIL_SMTP_PASSWORD: ${EMAIL_SMTP_PASSWORD}
+      EMAIL_FROM: ${EMAIL_FROM}
+      EMAIL_HELO_HOSTNAME: ${EMAIL_HELO_HOSTNAME}
+    volumes:
+      - moerderspiel-cache:/cache
+      - moerderspiel-data:/data
+
+volumes:
+  moerderspiel-cache:
+    driver: local
+  moerderspiel-data:
+    driver: local
