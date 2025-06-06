@@ -130,6 +130,9 @@ def gamemaster(service: GameService):
 
     if request.method == 'POST' and 'action' in request.form:
         try:
+            service.sanitize_game_data()
+            db.session.commit()
+
             if request.form['action'] == 'start-game':
                 service.start_game()
             elif request.form['action'] == 'end-game':

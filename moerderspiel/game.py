@@ -216,6 +216,19 @@ class GameService:
     def flush_changes(self):
         self.game.flush_changes()
 
+    def sanitize_game_data(self):
+        """
+        Hacky helper method to sanitize the contents of the database.
+        Call this before starting a game, AND ISSUE A DATABASE COMMIT IN BETWEEN.
+        """
+        if self.game.state == GameState.new:
+            # For some reason, sqlalchemy will assign positions every time a mission is read. This hack removes all
+            # positions if the game is still new. Without this, shuffle_circle will (temporarily) violate the
+            # UniqueConstraint on position numbers.
+            for circle in self.game.circles:
+                for mission in circle.missions:
+                    mission.position = None
+
     @classmethod
     def create_new_game(cls, session: Session, id: str, title: str, gamemaster_password: str,
                         circles: List[str] = None, **kwargs) -> 'GameService':

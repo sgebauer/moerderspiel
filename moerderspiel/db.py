@@ -13,7 +13,7 @@ from sqlalchemy import Engine, Enum, ForeignKey, inspect, select, desc, Select, 
 from sqlalchemy.ext.orderinglist import ordering_list
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, Session
 from sqlalchemy.schema import CheckConstraint, UniqueConstraint
-
+from sqlalchemy.sql.elements import TextClause
 
 class Base(DeclarativeBase):
     def _query(self, query):
@@ -217,7 +217,8 @@ class Mission(Base):
     """
     The position of this mission in its circle. This is None if and only if the game has not been started yet.
     """
-    position: Mapped[Optional[int]] = mapped_column()
+    position: Mapped[Optional[int]] = mapped_column(nullable=True, default=TextClause('NULL'),
+                                                    server_default=TextClause('NULL'))
 
     """
     The ID of the player who completed this mission.
