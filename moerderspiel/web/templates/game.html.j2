@@ -91,7 +91,7 @@
 
 {% call dialog(title='Login') %}
 <main>
-    {% with form = player_login_form %} <!-- TODO form und weiterleitung-->
+    {% with form = player_login_form %}
     <form method="post">
         {{ render_field(form.name, id=form.form_id) }}
         {{ render_field(form.password) }}

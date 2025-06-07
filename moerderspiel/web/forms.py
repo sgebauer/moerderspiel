@@ -42,7 +42,7 @@ class AddPlayerForm(Form):
                              verschiedenen Kreisen und Multispielen zu änder und nach Spielstart deine Aufträge 
                              einzusehen.
                              Gib das Passwort nicht an andere Mitspieler weiter.
-                             """)  # TODO text
+                             """)
 
 
 class PlayerLoginForm(Form):
