@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import random
 
 from moerderspiel import notification, pdf
@@ -48,7 +50,10 @@ class GameService:
         elif Player.by_game_and_name(self.game, name):
             raise GameError(f"A player named {name} already exists in this game")
 
-        player = Player(game=self.game, name=name, **kwargs)
+        player = Player(
+            game=self.game,
+            name=name,
+            **kwargs)
         self.game.add(player)
         return player
 
@@ -212,6 +217,10 @@ class GameService:
 
     def check_gamemaster_password(self, password) -> bool:
         return self.game.check_gamemaster_password(password)
+
+    def check_player_password(self, password, playername) -> bool:
+        player = self.get_player(playername)
+        return player.check_player_password(password)
 
     def flush_changes(self):
         self.game.flush_changes()

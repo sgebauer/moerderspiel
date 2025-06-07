@@ -35,6 +35,24 @@ class AddPlayerForm(Form):
                         description="""
                         Du kannst dir optional deine Mordaufträge per E-Mail zuschicken lassen.
                         """)
+    password = PasswordField('Passwort',
+                             [validators.EqualTo('password')],
+                             description="""
+                             Du kannst optional ein Passwort angeben, um vor Spielstart die Teilname an den 
+                             verschiedenen Kreisen und Multispielen zu änder und nach Spielstart deine Aufträge 
+                             einzusehen.
+                             Gib das Passwort nicht an andere Mitspieler weiter.
+                             """)  # TODO text
+
+
+class PlayerLoginForm(Form):
+    form_id = "login-player"
+
+    name = StringField('Spielername',
+                       [validators.Length(max=constants.MAX_PLAYER_NAME_LENGTH)],
+                       id=form_id)
+    password = PasswordField('Passwort',
+                             [validators.EqualTo('password')])
 
 
 class CreateGameForm(Form):

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from contextlib import contextmanager
 
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -112,6 +114,11 @@ class Player(Base):
     """
     group: Mapped[str] = mapped_column(String(constants.MAX_GROUP_NAME_LENGTH))
 
+    """
+    The player's password.
+    """
+    player_password: Mapped[str]
+
     __table_args__ = (
         UniqueConstraint('game_id', 'name'),
     )
@@ -140,6 +147,9 @@ class Player(Base):
     @classmethod
     def by_game(cls, game: Game) -> List['Player']:
         return list(game._query(select(cls).where(cls.game == game)).all())
+
+    def check_player_password(self, password: str) -> bool:
+        return check_password_hash(self.player_password, password)
 
 
 class Circle(Base):
@@ -186,6 +196,7 @@ class Circle(Base):
     @classmethod
     def by_game_and_set(cls, game: Game, set: str) -> List['Circle']:
         return list(game._query(select(cls).where(cls.game == game).where(cls.set == set)).all())
+
 
 
 class Mission(Base):
@@ -403,6 +414,10 @@ class NotificationAddress(Base):
 
 
 @event.listens_for(Game.gamemaster_password, 'set', named=True, retval=True)
+def hash_user_password(value: str, oldvalue: str, **kwargs):
+    return value if value == oldvalue else generate_password_hash(value)
+
+@event.listens_for(Player.player_password, 'set', named=True, retval=True)
 def hash_user_password(value: str, oldvalue: str, **kwargs):
     return value if value == oldvalue else generate_password_hash(value)
 

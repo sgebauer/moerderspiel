@@ -1,0 +1,44 @@
+{% extends "_base.html.j2" %}
+
+{% block main %}
+<article id="player-options-for-game">
+    <header>
+        <h1>
+            Player: {{ player.name }}
+            <form method="post" style="text-align: right;">
+                {% if game.started %}
+                    <a role="button" class="primary" target="_blank" title="Aufträge herunterladen"
+                       href="{{ url_for('player_missions', game_id=game.id, player_name=player.name) }}"
+                       {{ '' if player.alive else 'disabled' }}>
+                        {{ icon("file-document-outline") }}
+                    </a>
+                    <button class="primary" name="action" value="resend-player-missions" title="Aufträge neu versenden"
+                            {{ '' if player.alive and player.notifiable else 'disabled' }}>
+                        {{ icon("email-sync-outline") }}
+                    </button>
+                {% endif %}
+            </form>
+        </h1>
+    </header>
+    <main>
+        {% include "partials/gameinfo.html.j2" %}
+    </main>
+</article>
+
+<!-- <article>
+<main>
+
+<label for="circles"></label>
+    <select id="circles">
+        {% for circle in game.circles %} TODO Issue #6
+        <tr>
+            <td>{{ circle.name }}</td>
+            <td>{{ circle.set | default('', true) }}</td>
+            <td>{{ circle.missions | list | length }}</td>
+        </tr>
+        {% endfor %}
+    </select>
+</main>
+</article> -->
+
+{% endblock %}
