@@ -20,25 +20,8 @@
             </form>
         </h1>
     </header>
-    <main>
-        {% include "partials/gameinfo.html.j2" %}
-    </main>
 </article>
 
-<!-- <article>
-<main>
-
-<label for="circles"></label>
-    <select id="circles">
-        {% for circle in game.circles %} TODO Issue #6
-        <tr>
-            <td>{{ circle.name }}</td>
-            <td>{{ circle.set | default('', true) }}</td>
-            <td>{{ circle.missions | list | length }}</td>
-        </tr>
-        {% endfor %}
-    </select>
-</main>
-</article> -->
+<!-- TODO more content-->
 
 {% endblock %}
