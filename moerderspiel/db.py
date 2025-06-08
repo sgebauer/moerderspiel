@@ -251,20 +251,22 @@ class Mission(Base):
     def _previous(self, query: Select) -> 'Mission':
         """
         Get the previous mission in the same circle based on the given query.
+        May return the same mission or None if no (other) mission matches the query.
         """
         basequery = query.where(Mission.circle == self.circle).order_by(desc(Mission.position)).limit(1)
 
         return self._query(basequery.where(Mission.position < self.position)).one_or_none() \
-            or self._query(basequery.where(Mission.position > self.position)).one_or_none()
+            or self._query(basequery.where(Mission.position >= self.position)).one_or_none()
 
     def _next(self, query: Select) -> 'Mission':
         """
         Get the next mission in the same circle based on the given query.
+        May return the same mission or None if no (other) mission matches the query.
         """
         basequery = query.where(Mission.circle == self.circle).order_by(Mission.position).limit(1)
 
         return self._query(basequery.where(Mission.position > self.position)).one_or_none() \
-            or self._query(basequery.where(Mission.position < self.position)).one_or_none()
+            or self._query(basequery.where(Mission.position <= self.position)).one_or_none()
 
     @property
     def previous(self) -> 'Mission':
@@ -281,9 +283,17 @@ class Mission(Base):
         return self._next(select(Mission))
 
     def get_next_uncompleted(self) -> 'Mission':
+        """
+        The next uncompleted mission in the circle. May return the same mission if the circle is completed.
+        May return None if all players in the circle have been killed or kicked.
+        """
         return self._next(select(Mission).where(Mission.completion_date == None))
 
     def get_previous_uncompleted(self) -> 'Mission':
+        """
+        The next uncompleted mission in the circle. May return the same mission if the circle is completed.
+        May return None if all players in the circle have been killed or kicked.
+        """
         return self._previous(select(Mission).where(Mission.completion_date == None))
 
     @property
@@ -314,6 +324,14 @@ class Mission(Base):
         Whether this mission has been completed yet.
         """
         return self.completion_date != None
+
+    @property
+    def achievable(self) -> bool:
+        """
+        Whether this mission is still achievable, i.e. the victim and at least one other player in the same circle are
+        still alive.
+        """
+        return (not self.completed) and (self.get_next_uncompleted() != self)
 
     @property
     def game(self) -> Game:
@@ -357,7 +375,7 @@ class Mission(Base):
 
     @classmethod
     def achievable_missions_by_victim(cls, victim: Player) -> List['Mission']:
-        return list(v for v in victim.victim_missions if (not v.completed) and (v.get_next_uncompleted() != v))
+        return list(v for v in victim.victim_missions if v.achievable)
 
     @classmethod
     def achievable_missions_by_current_owner(cls, player: Player) -> List['Mission']:
