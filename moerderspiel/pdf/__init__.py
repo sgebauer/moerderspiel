@@ -44,8 +44,12 @@ def generate_mission_sheets(missions: List[Mission]) -> str:
     dest = os.path.join(CACHE_DIRECTORY, 'mission-sheets', f"{game_hash}.pdf")
 
     if not os.path.exists(dest):
-        print(f"Generating game mission sheet {dest}")
-        subprocess.run(['/usr/bin/pdfunite', *mission_sheets, dest])
+        if missions:
+            print(f"Generating game mission sheet {dest}")
+            subprocess.run(['/usr/bin/pdfunite', *mission_sheets, dest])
+        else:
+            print(f"Generating empty mission sheet")
+            subprocess.run(['/bin/touch', dest])
 
     return dest
 
