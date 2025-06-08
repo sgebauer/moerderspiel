@@ -1,4 +1,4 @@
-import os.path
+import os
 import socket
 
 CACHE_DIRECTORY = os.environ['CACHE_DIRECTORY']

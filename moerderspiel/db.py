@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from contextlib import contextmanager
 
 from werkzeug.security import generate_password_hash, check_password_hash

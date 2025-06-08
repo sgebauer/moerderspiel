@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import random
 
 from moerderspiel import notification, pdf
