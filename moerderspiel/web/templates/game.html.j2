@@ -12,11 +12,25 @@
         {% include "partials/gameinfo.html.j2" %}
 
         <div role="row">
-            <article>Massenmörder</article>
+            <h2>Massenmörder</h2>
+            <h3>Allgemein</h3>
             <article>
                 {{ mass_murderers | map(attribute='name') | join(', ') }}
                 ({{ completed_missions | selectattr('killer', 'eq', mass_murderers[0]) | list | length }} Morde)
             </article>
+            {% for circle_set in  mass_murderers_circleset.keys() -%}
+                <article>
+                    <h3>{{  circle_set }}</h3>
+                    {%  if mass_murderers_circleset[circle_set] %}
+                        {{ mass_murderers_circleset[circle_set] | map(attribute='name') | join(', ') }}
+                        ({{ completed_missions_circleset[circle_set] | selectattr('killer', 'eq', mass_murderers_circleset[circle_set][0]) | list | length }} Morde)
+                    {%  else %}
+                        Noch keine Morde... vielleicht ist das hier doch nur ein Farming-Simulator?
+                    {% endif %}
+                 </article>
+
+            {%- endfor %}
+
         </div>
     </main>
 
@@ -40,9 +54,14 @@
 </article>
 
 <div id="missions">
-    {% for mission in completed_missions -%}
-        {% include "partials/mission.html.j2" %}
-    {%- endfor %}
+    {% for circle_set in  completed_missions_circleset.keys() %}
+        <h3> {{  circle_set }}</h3>
+        <article>
+        {% for mission in completed_missions_circleset[circle_set] -%}
+            {% include "partials/mission.html.j2" %}
+        {%- endfor %}
+        </article>
+    {% endfor %}
 </div>
 {% endblock %}
 

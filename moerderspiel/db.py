@@ -360,7 +360,7 @@ class Mission(Base):
         May return the player's own victim mission if the circle is completed.
         """
         victim_mission = cls.by_victim_in_circle(owner, circle)
-        if not victim_mission or victim_mission.completed:
+        if (not victim_mission) or victim_mission.completed:
             return None
         else:
             return victim_mission.get_next_uncompleted()
@@ -392,6 +392,17 @@ class Mission(Base):
         return list(game._query(select(cls).where(cls.circle.has(Circle.game == game)).where(cls.completion_date != None)).all())
 
     @classmethod
+    def completed_missions_in_game_by_owner(cls, game: Game, owner: Player) -> List['Mission']:
+        ret = list(game._query(select(cls).where(cls.circle.has(Circle.game == game)).where(cls.completion_date != None)).all())
+        return [mission for mission in ret if mission.current_owner == owner ]
+
+    @classmethod
+    def completed_missions_in_game_by_circle(cls, game: Game, circle: Circle) -> List['Mission']:
+        return list(game._query(
+            select(cls).where(cls.circle.has(Circle.game == game)).where(cls.completion_date != None).where(Mission.circle == circle)).all())
+
+
+    @classmethod
     def by_killer(cls, killer: Player) -> List['Mission']:
         return list(killer._query(select(cls).where(cls.killer == killer)).all())
 
@@ -399,6 +410,17 @@ class Mission(Base):
     def mass_murderers_by_game(cls, game: Game) -> List[Player]:
         max_kill_count = game._query(
             select(func.count()).select_from(Mission).where(Mission.killer_id != None).group_by(
+                Mission.killer_id).order_by(desc(func.count())).limit(1)).one_or_none()
+
+        if not max_kill_count:
+            return []
+        else:
+            return list(p for p in game.players if len(cls.by_killer(p)) == max_kill_count)
+
+    @classmethod
+    def mass_murderers_by_circle(cls, game: Game, circle: Circle) -> List[Player]:
+        max_kill_count = game._query(
+            select(func.count()).select_from(Mission).where(Mission.killer_id != None).where(Mission.circle == circle).group_by(
                 Mission.killer_id).order_by(desc(func.count())).limit(1)).one_or_none()
 
         if not max_kill_count:
