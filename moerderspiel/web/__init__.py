@@ -90,7 +90,7 @@ def index():
 @app.route('/game/<game_id>', methods=['GET', 'POST'])
 @with_game_service
 def game(service: GameService):
-    add_player_form = AddPlayerForm(request.form)
+    add_player_form = AddPlayerForm(service.game, request.form)
     record_murder_form = RecordMurderForm(service.game, request.form)
     gamemaster_login_form = GameMasterLoginForm(request.form)
     player_login_form = PlayerLoginForm(request.form)
@@ -102,12 +102,22 @@ def game(service: GameService):
                     player_login = service.add_player(
                         name=add_player_form.name.data,
                         group=add_player_form.group.data,
+                        circleset_string='|'.join(add_player_form.circle_sets.data),
                         player_password=add_player_form.password.data)
                 else:
                     player_login = service.add_player(
                         name=add_player_form.name.data,
                         group=add_player_form.group.data)
-                for circle in service.game.circles:
+
+                circles = []
+                if add_player_form.circle_sets.data:
+                    for circle_set in add_player_form.circle_sets.data:
+                        circles += Circle.by_game_and_set(service.game, circle_set)
+                    circles = list(set(circles))
+                else:
+                    circles = service.game.circles
+
+                for circle in circles:
                     service.add_player_to_circle(player_login, circle)
                 db.session.commit()
 

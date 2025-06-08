@@ -83,6 +83,22 @@
         {{ render_field(form.password) }}
         {{ render_field(form.group) }}
         {{ render_field(form.email) }}
+        {%  if game.circles %}
+            {% for value, label in form.circle_sets.choices %}
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox"
+                    name="circle_sets" value="{{ value }}"
+                    id="circle_sets_{{ loop.index }}"
+                    {% if value in form.circle_sets.data %}
+                           checked
+                    {% endif %}>
+                    <label class="form-check-label" for="circle_sets_{{ loop.index }}">
+                    {{ label }}
+                    </label>
+                </div>
+            {% endfor %}
+        {% endif %}
+
         <button type="submit" name="form" value="{{ form.form_id }}">Spieler eintragen</button>
     </form>
     {% endwith %}

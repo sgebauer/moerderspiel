@@ -113,6 +113,11 @@ class Player(Base):
     group: Mapped[str] = mapped_column(String(constants.MAX_GROUP_NAME_LENGTH))
 
     """
+    The circle-sets the Player wants to join as joined String. using separator '|'
+    """
+    circleset_string: Mapped[str] = mapped_column(String, nullable=True)
+
+    """
     The player's password.
     """
     player_password: Mapped[str]
@@ -137,6 +142,12 @@ class Player(Base):
     @property
     def notifiable(self) -> bool:
         return any(n for n in self.notification_addresses if n.active)
+
+    @property
+    def circle_sets(self) -> [str]:
+        if not self.circleset_string:
+            return []
+        return self.circleset_string.split('|')
 
     @classmethod
     def by_game_and_name(cls, game: Game, name: str) -> 'Player':

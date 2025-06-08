@@ -1,7 +1,7 @@
 import datetime
 
 from wtforms import Form, StringField, validators
-from wtforms.fields.choices import SelectField
+from wtforms.fields.choices import SelectField, SelectMultipleField
 from wtforms.fields.datetime import DateTimeLocalField
 from wtforms.fields.simple import PasswordField, TextAreaField
 
@@ -43,6 +43,15 @@ class AddPlayerForm(Form):
                              einzusehen.
                              Gib das Passwort nicht an andere Mitspieler weiter.
                              """)
+
+    circle_sets = SelectMultipleField('Kreis-Sets',
+                         description="An welchen Kreis-sets willst du Teilnehmen? Wenn du das Feld leer lässt, wirst du in allen Kreisen eingertagen.")
+
+    def __init__(self, game: Game, *args, **kwargs: object):
+        super().__init__(*args, **kwargs)
+        if game.circles:
+            self.circle_sets.choices = list(set([(c.set, c.set) for c in game.circles if c.set]))
+
 
 
 class PlayerLoginForm(Form):
