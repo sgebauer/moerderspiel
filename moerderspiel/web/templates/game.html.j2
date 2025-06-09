@@ -53,14 +53,16 @@
     </footer>
 </article>
 
-<div id="missions">
+<div id="missions"> <!-- TODO nicht schön-->
     {% for circle_set in  completed_missions_circleset.keys() %}
-        <h3> {{  circle_set }}</h3>
-        <article>
-        {% for mission in completed_missions_circleset[circle_set] -%}
-            {% include "partials/mission.html.j2" %}
-        {%- endfor %}
-        </article>
+        <p>
+            <h3> {{  circle_set }}</h3>
+            <article>
+            {% for mission in completed_missions_circleset[circle_set] %}
+                {% include "partials/mission.html.j2" %}
+            {% endfor %}
+            </article>
+        </p>
     {% endfor %}
 </div>
 {% endblock %}

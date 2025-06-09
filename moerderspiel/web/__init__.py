@@ -341,7 +341,7 @@ def completed_missions_per_circleset(game: Game) -> dict :
             ret[circle.set] = Mission.completed_missions_in_game_by_circle(game, circle)
     return ret
 
-def mass_murderer_per_circleset(game: Game) -> dict :
+def mass_murderer_per_circleset(game: Game) -> dict : #TODO hier stimmt was ned, da is leer wenn nciht sein sollte
     ret = {}
     circles = Circle.by_game(game)
     for circle in circles:
