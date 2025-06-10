@@ -12,10 +12,16 @@
 <h1>Mörderwall - <a href=".">{{ game.title }}</a></h1>
 {% endblock %}
 
-{% block main %}
 <div id="missions">
-    {% for mission in completed_missions -%}
-        {% include "partials/mission.html.j2" %}
-    {%- endfor %}
+    {% for circle_set in  completed_missions_circleset.keys() %} <!-- TODO nicht schön-->
+        <p>
+            <h3> {{  circle_set }}</h3>
+            <article>
+            {% for mission in completed_missions_circleset[circle_set] -%}
+                {% include "partials/mission.html.j2" %}
+            {%- endfor %}
+            </article>
+        </p>
+    {% endfor %}
 </div>
 {% endblock %}
