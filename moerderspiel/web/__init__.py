@@ -9,7 +9,9 @@ from flask_sqlalchemy import SQLAlchemy
 from moerderspiel.db import Base, Game, Mission, Circle, Player, NotificationAddressType
 from moerderspiel import config, graph, pdf, notification
 from moerderspiel.game import GameService, GameError
-from moerderspiel.web.forms import AddPlayerForm, CreateGameForm, RecordMurderForm, GameMasterLoginForm, AddCircleForm
+from moerderspiel.player import PlayerService
+from moerderspiel.web.forms import AddPlayerForm, PlayerLoginForm, CreateGameForm, RecordMurderForm, \
+    GameMasterLoginForm, AddCircleForm
 
 app = Flask(__name__)
 app.config.from_prefixed_env()
@@ -29,6 +31,15 @@ def with_game_service(f):
     return decorated_function
 
 
+def with_player_service(f):
+    @wraps(f)
+    def decorated_function(player_id: str, **kwargs):
+        kwargs['service'] = PlayerService(db.get_or_404(Player, player_id))
+        return f(**kwargs)
+
+    return decorated_function
+
+
 def needs_gamemaster_authentication(f):
     @wraps(f)
     def decorated_function(service: GameService, **kwargs):
@@ -36,6 +47,17 @@ def needs_gamemaster_authentication(f):
             return f(service=service, **kwargs)
         else:
             return redirect(url_for('game', game_id=service.game.id, _anchor=GameMasterLoginForm.form_id))
+
+    return decorated_function
+
+
+def needs_player_authentication(f):
+    @wraps(f)
+    def decorated_function(service: PlayerService, **kwargs):
+        if service.player.id in (session.get('player_authenticated') or []):
+            return f(service=service, **kwargs)
+        else:
+            return redirect(url_for('game', game_id=service.player.game.id, _anchor=PlayerLoginForm.form_id))
 
     return decorated_function
 
@@ -71,17 +93,26 @@ def game(service: GameService):
     add_player_form = AddPlayerForm(request.form)
     record_murder_form = RecordMurderForm(service.game, request.form)
     gamemaster_login_form = GameMasterLoginForm(request.form)
+    player_login_form = PlayerLoginForm(request.form)
 
     if request.method == 'POST' and request.form['form'] == add_player_form.form_id:
         if add_player_form.validate():
             try:
-                player = service.add_player(name=add_player_form.name.data, group=add_player_form.group.data)
+                if add_player_form.password.data:
+                    player_login = service.add_player(
+                        name=add_player_form.name.data,
+                        group=add_player_form.group.data,
+                        player_password=add_player_form.password.data)
+                else:
+                    player_login = service.add_player(
+                        name=add_player_form.name.data,
+                        group=add_player_form.group.data)
                 for circle in service.game.circles:
-                    service.add_player_to_circle(player, circle)
+                    service.add_player_to_circle(player_login, circle)
                 db.session.commit()
 
                 if add_player_form.email.data:
-                    send_confirmation_message(player, NotificationAddressType.email, add_player_form.email.data)
+                    send_confirmation_message(player_login, NotificationAddressType.email, add_player_form.email.data)
 
                 flash('Spieler eingetragen', 'success')
                 return redirect(url_for('game', game_id=service.game.id, _anchor='top'))
@@ -112,6 +143,19 @@ def game(service: GameService):
                     flash('Falsches Passwort', 'error')
             except GameError as e:
                 flash(str(e), 'error')
+    elif request.method == 'POST' and request.form['form'] == player_login_form.form_id:
+        if player_login_form.validate():
+            try:
+                if service.check_player_password(player_login_form.password.data, player_login_form.name.data):
+                    player_login = service.get_player(player_login_form.name.data)
+                    session['player_authenticated'] = (session.get('player_authenticated') or []) + [
+                        player_login.id]
+                    return redirect(
+                        url_for('player', player_id=player_login.id, _anchor='top'))
+                else:
+                    flash('Falsches Passwort', 'error')
+            except GameError as e:
+                flash(str(e), 'error')
 
     return render_template('game.html.j2',
                            game=service.game,
@@ -119,7 +163,8 @@ def game(service: GameService):
                            mass_murderers=Mission.mass_murderers_by_game(service.game),
                            add_player_form=add_player_form,
                            record_murder_form=record_murder_form,
-                           gamemaster_login_form=gamemaster_login_form)
+                           gamemaster_login_form=gamemaster_login_form,
+                           player_login_form=player_login_form)
 
 
 @app.route('/gamemaster/<game_id>', methods=['GET', 'POST'])
@@ -161,6 +206,17 @@ def gamemaster(service: GameService):
     return render_template('gamemaster.html.j2',
                            game=service.game,
                            add_circle_form=add_circle_form)
+
+
+@app.get('/player/<player_id>')
+@with_player_service
+@needs_player_authentication
+def player(service: PlayerService):
+    # sets and circles wie anschaulich trennen
+    return render_template('player.html.j2',
+                           player=service.player,
+                           game=service.player.game,
+                           completed_missions=Mission.completed_missions_in_game(service.player.game))
 
 
 @app.get('/game/<game_id>/graph.svg')

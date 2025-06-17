@@ -1,4 +1,4 @@
-FROM python:3.11-bookworm
+FROM docker.io/python:3.11-bookworm
 
 WORKDIR /opt/moerderspiel
 
