@@ -11,7 +11,8 @@ from moerderspiel import config, graph, pdf, notification
 from moerderspiel.game import GameService, GameError
 from moerderspiel.player import PlayerService
 from moerderspiel.web.forms import AddPlayerForm, PlayerLoginForm, CreateGameForm, RecordMurderForm, \
-    GameMasterLoginForm, AddCircleForm
+    GameMasterLoginForm, AddCircleForm, ChooseCirclesetForm
+
 
 app = Flask(__name__)
 app.config.from_prefixed_env()
@@ -90,7 +91,7 @@ def index():
 @app.route('/game/<game_id>', methods=['GET', 'POST'])
 @with_game_service
 def game(service: GameService):
-    add_player_form = AddPlayerForm(request.form)
+    add_player_form = AddPlayerForm(service.game, request.form)
     record_murder_form = RecordMurderForm(service.game, request.form)
     gamemaster_login_form = GameMasterLoginForm(request.form)
     player_login_form = PlayerLoginForm(request.form)
@@ -102,12 +103,22 @@ def game(service: GameService):
                     player_login = service.add_player(
                         name=add_player_form.name.data,
                         group=add_player_form.group.data,
+                        circleset_string='|'.join(add_player_form.circle_sets.data),
                         player_password=add_player_form.password.data)
                 else:
                     player_login = service.add_player(
                         name=add_player_form.name.data,
                         group=add_player_form.group.data)
-                for circle in service.game.circles:
+
+                circles = []
+                if add_player_form.circle_sets.data:
+                    for circle_set in add_player_form.circle_sets.data:
+                        circles += Circle.by_game_and_set(service.game, circle_set)
+                    circles = list(set(circles))
+                else:
+                    circles = service.game.circles
+
+                for circle in circles:
                     service.add_player_to_circle(player_login, circle)
                 db.session.commit()
 
@@ -161,6 +172,8 @@ def game(service: GameService):
                            game=service.game,
                            completed_missions=Mission.completed_missions_in_game(service.game),
                            mass_murderers=Mission.mass_murderers_by_game(service.game),
+                           completed_missions_circleset=completed_missions_per_circleset(service.game),
+                           mass_murderers_circleset=mass_murderer_per_circleset(service.game),
                            add_player_form=add_player_form,
                            record_murder_form=record_murder_form,
                            gamemaster_login_form=gamemaster_login_form,
@@ -208,15 +221,40 @@ def gamemaster(service: GameService):
                            add_circle_form=add_circle_form)
 
 
-@app.get('/player/<player_id>')
+@app.route('/player/<player_id>', methods=['GET', 'POST'])
 @with_player_service
 @needs_player_authentication
 def player(service: PlayerService):
-    # sets and circles wie anschaulich trennen
+    circle_set_form = ChooseCirclesetForm(service.player.game, request.form)
+
+    if request.method == 'POST' and request.form['form'] == circle_set_form.form_id:
+        try:
+            in_circles = []
+            for circle_set in circle_set_form.circle_sets.data:
+                in_circles += Circle.by_game_and_set(service.player.game, circle_set)
+            in_circles = list(set(in_circles))
+
+            out_circles = [c for c in service.player.game.circles if c not in in_circles]
+
+
+            for circle in in_circles:
+                service.add_player_to_circle(circle)
+            for circle in out_circles:
+                service.remove_player_from_circle(circle)
+            service.player.circleset_string = '|'.join(c.name for c in in_circles)
+            db.session.commit()
+
+            flash('Teilnahme an Sets geändert', 'success')
+        except GameError as e:
+            flash(str(e), 'error')
+
     return render_template('player.html.j2',
+                           circle_set_form=circle_set_form,
                            player=service.player,
                            game=service.player.game,
-                           completed_missions=Mission.completed_missions_in_game(service.player.game))
+                           player_circle_set=service.player.circle_sets,
+                           completed_missions=Mission.completed_missions_in_game_by_owner(service.player.game, service.player),
+                           open_missions=service.get_current_missions)
 
 
 @app.get('/game/<game_id>/graph.svg')
@@ -235,7 +273,7 @@ def game_graph(service: GameService):
 def game_wall(service: GameService):
     return render_template('wall.html.j2',
                            game=service.game,
-                           completed_missions=Mission.completed_missions_in_game(service.game))
+                           completed_missions_circleset=completed_missions_per_circleset(service.game))
 
 
 @app.get('/game/<game_id>/missions.pdf')
@@ -292,3 +330,25 @@ def send_confirmation_message(player: Player, address_type: NotificationAddressT
         address=address,
         url=url_for('confirm_address', _external=True, token=token),
         game_title=player.game.title)
+
+def completed_missions_per_circleset(game: Game) -> dict :
+    ret = {}
+    circles = Circle.by_game(game)
+    for circle in circles:
+        if circle.set and circle.set in ret:
+            ret[circle.set] = ret[circle.set] + Mission.completed_missions_in_game_by_circle(game, circle)
+        else:
+            ret[circle.set] = Mission.completed_missions_in_game_by_circle(game, circle)
+    return ret
+
+def mass_murderer_per_circleset(game: Game) -> dict : #TODO hier stimmt was ned, da is leer wenn nciht sein sollte
+    ret = {}
+    circles = Circle.by_game(game)
+    for circle in circles:
+        if circle.set in ret:
+            ret[circle.set] = ret[circle.set] + Mission.mass_murderers_by_circle(game, circle)
+        else:
+            ret[circle.set] = Mission.mass_murderers_by_circle(game, circle)
+    return ret
+
+
