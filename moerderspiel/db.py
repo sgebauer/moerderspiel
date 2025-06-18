@@ -120,7 +120,7 @@ class Player(Base):
     """
     The player's password.
     """
-    player_password: Mapped[str]
+    player_password: Mapped[Optional[str]]
 
     __table_args__ = (
         UniqueConstraint('game_id', 'name'),
