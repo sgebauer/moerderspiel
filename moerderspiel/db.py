@@ -158,6 +158,8 @@ class Player(Base):
         return list(game._query(select(cls).where(cls.game == game)).all())
 
     def check_player_password(self, password: str) -> bool:
+        if self.player_password is None:
+            return True
         return check_password_hash(self.player_password, password)
 
 
