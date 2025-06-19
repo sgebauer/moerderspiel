@@ -12,6 +12,7 @@
 <h1>Mörderwall - <a href=".">{{ game.title }}</a></h1>
 {% endblock %}
 
+{% block content %}
 <div id="missions">
     {% for circle_set in  completed_missions_circleset.keys() %} <!-- TODO nicht schön-->
         <p>
