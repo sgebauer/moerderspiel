@@ -4,35 +4,40 @@
 \usepackage[paperheight=74.25mm,paperwidth=70mm,margin=4mm]{geometry}
 
 \usepackage{pifont}
-\usepackage{catchfile}
-\newcommand{\getenv}[1]{\CatchFileEdef{\temp}{"|kpsewhich --var-value #1"}{\endlinechar=-1}\temp}
-
 \usepackage{fontspec}
+
+\newcommand{\getenv}[1]{%
+  \directlua{
+    local value = os.getenv("#1") or "!!#1 NOT FOUND!!"
+    tex.sprint(-2, value)
+  }%
+}
+
 \setmainfont{Noto Serif}
 
 \begin{document}
 
-  \centering
-  \getenv{owner} \\
-  \dotfill\raisebox{-0.25\baselineskip}{\ding{34}}\dotfill {\tiny Nach Erhalt des Auftrags hier abtrennen} \dotfill\raisebox{-0.25\baselineskip}{\ding{34}}\dotfill
-  \\~\\
+ \centering
+ \leavevmode\getenv{owner} \\
+ \dotfill\raisebox{-0.25\baselineskip}{\ding{34}}\dotfill {\tiny Nach Erhalt des Auftrags hier abtrennen} \dotfill\raisebox{-0.25\baselineskip}{\ding{34}}\dotfill
+ \\~\\
 
-  \fbox{\begin{minipage}[b][53mm][c]{55mm}
-    \begin{center}
-      \getenv{headline} \\
-      \medskip
-      Mordauftrag: \\
-      {\Large \textbf{\sffamily{\getenv{victim}}}}
-    \end{center}
+ \fbox{\begin{minipage}[b][53mm][c]{55mm}
+   \begin{center}
+     \leavevmode\getenv{headline} \\
+     \medskip
+     Mordauftrag: \\
+     {\Large \textbf{\sffamily{\leavevmode\getenv{victim}}}}
+   \end{center}
 
-    \textbf{Trage diesen Auftrag immer bei dir.}
-    Hast du ihn erledigt, zeige ihn deinem Opfer zum Beweis, und melde den Mord dann auf der Webseite des Spiels.
-    Wurdest du in diesem Kreis ermordet, gib diesen Auftrag deinem Mörder.
+   \textbf{Trage diesen Auftrag immer bei dir.}
+   Hast du ihn erledigt, zeige ihn deinem Opfer zum Beweis, und melde den Mord dann auf der Webseite des Spiels.
+   Wurdest du in diesem Kreis ermordet, gib diesen Auftrag deinem Mörder.
 
-    \begin{center}
-      Auftrags-Code: \texttt{\getenv{missioncode}} \\
-      \texttt{\getenv{gameurl}}
-    \end{center}
-  \end{minipage}}
+   \begin{center}
+     Auftrags-Code: \texttt{\leavevmode\getenv{missioncode}} \\
+     \texttt{\leavevmode\getenv{gameurl}}
+   \end{center}
+ \end{minipage}}
 
 \end{document}
