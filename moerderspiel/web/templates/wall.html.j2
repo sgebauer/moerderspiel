@@ -12,17 +12,26 @@
 <h1>Mörderwall - <a href=".">{{ game.title }}</a></h1>
 {% endblock %}
 
-{% block content %}
+{% block main %}
 <div id="missions">
-    {% for circle_set in  completed_missions_circleset.keys() %} <!-- TODO nicht schön-->
-        <p>
-            <h3> {{  circle_set }}</h3>
-            <article>
-            {% for mission in completed_missions_circleset[circle_set] -%}
-                {% include "partials/mission.html.j2" %}
-            {%- endfor %}
-            </article>
-        </p>
-    {% endfor %}
+    {% if completed_missions_circleset %}
+        {% for circle_set in completed_missions_circleset.keys() %}
+            {% if completed_missions_circleset[circle_set] %}
+                <p>
+                    <h3>{{ circle_set or "Unassigned" }}</h3>
+                    <article>
+                    {% for mission in completed_missions_circleset[circle_set] -%}
+                        {% include "partials/mission.html.j2" %}
+                    {%- endfor %}
+                    </article>
+                </p>
+            {% endif %}
+        {% endfor %}
+    {% else %}
+        <article>
+            <p><em>Noch keine Morde passiert! Die Mörderwall wird hier die abgeschlossenen Missionen anzeigen.</em></p>
+            <p><small>Game Status: {{ game.state }}</small></p>
+        </article>
+    {% endif %}
 </div>
 {% endblock %}
