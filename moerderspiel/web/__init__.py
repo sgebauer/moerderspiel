@@ -219,6 +219,7 @@ def gamemaster(service: GameService):
 
     return render_template('gamemaster.html.j2',
                            game=service.game,
+                           completed_missions=Mission.completed_missions_in_game(service.game),
                            add_circle_form=add_circle_form)
 
 
