@@ -513,11 +513,22 @@ def player_target_jobs(service: GameService, player_name: str):
                     # current_owner might be None in some edge cases
                     current_owner_name = None
             
+            # Handle killer name properly
+            killer_name = None
+            if mission.completed:
+                # Mission is completed
+                if mission.killer:
+                    killer_name = mission.killer.name
+                else:
+                    # Completed mission with no killer means kicked/admin action
+                    killer_name = "Gekickt/Admin"
+            # If mission is not completed, killer_name stays None (will show as "-" in frontend)
+            
             target_jobs.append({
                 'mission_id': mission.position,
                 'circle_name': mission.circle.name,
                 'circle_set': mission.circle.set,
-                'killer_name': mission.killer.name if mission.killer else "Gekickt/Admin",
+                'killer_name': killer_name,
                 'mission_code': mission.code if service.game.started else None,
                 'completed': mission.completion_date is not None,
                 'completed_at': mission.completion_date.isoformat() if mission.completion_date else None,

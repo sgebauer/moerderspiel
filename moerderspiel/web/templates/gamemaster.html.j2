@@ -302,6 +302,7 @@ document.getElementById('player-jobs-modal').addEventListener('click', function(
 
 // Kick modal functions
 let pendingKickData = null;
+let currentKickData = null;
 
 function showKickModal(playerName, gameId) {
     const modal = document.getElementById('kick-modal');
@@ -329,6 +330,7 @@ function showKickModal(playerName, gameId) {
             }
             
             pendingKickData = { playerName, gameId };
+            currentKickData = data;
             
             let html = `
                 <p><strong>Wenn Sie ${playerName} kicken, werden folgende Aufträge übertragen:</strong></p>
@@ -366,6 +368,7 @@ function showKickModal(playerName, gameId) {
                 
                 html += '</tbody></table>';
                 html += '<p><em>Diese Spieler werden automatisch über ihre neuen Aufträge benachrichtigt.</em></p>';
+                html += '<button type="button" class="secondary" onclick="copyMissionTransfersAsMarkdown()">Als Markdown kopieren</button>';
             }
             
             modalContent.innerHTML = html;
@@ -379,6 +382,7 @@ function closeKickModal() {
     const modal = document.getElementById('kick-modal');
     modal.close();
     pendingKickData = null;
+    currentKickData = null;
 }
 
 function confirmKick() {
@@ -404,6 +408,57 @@ function confirmKick() {
     form.appendChild(actionInput);
     document.body.appendChild(form);
     form.submit();
+}
+
+function copyMissionTransfersAsMarkdown() {
+    if (!pendingKickData || !currentKickData) {
+        alert('Keine Daten zum Kopieren verfügbar.');
+        return;
+    }
+    
+    const playerName = pendingKickData.playerName;
+    const transfers = currentKickData.mission_transfers;
+    
+    let markdown = `# Auftragstransfers nach Kick von ${playerName}\n\n`;
+    
+    if (transfers.length === 0) {
+        markdown += 'Keine Auftragstransfers erforderlich.\n';
+    } else {
+        markdown += '| Kreis | Kreis-Set | Neuer Jäger | Neues Ziel | Auftragscode |\n';
+        markdown += '|-------|-----------|-------------|------------|--------------|\n';
+        
+        transfers.forEach(transfer => {
+            const circleSet = transfer.circle_set || '-';
+            markdown += `| ${transfer.circle_name} | ${circleSet} | **${transfer.current_owner}** | ${transfer.next_target} | \`${transfer.mission_code}\` |\n`;
+        });
+        
+        markdown += '\n_Diese Spieler wurden automatisch über ihre neuen Aufträge benachrichtigt._\n';
+    }
+    
+    // Copy to clipboard
+    navigator.clipboard.writeText(markdown).then(() => {
+        // Show temporary feedback
+        const button = event.target;
+        const originalText = button.textContent;
+        button.textContent = 'Kopiert!';
+        button.style.backgroundColor = '#28a745';
+        
+        setTimeout(() => {
+            button.textContent = originalText;
+            button.style.backgroundColor = '';
+        }, 2000);
+    }).catch(err => {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = markdown;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        
+        // Show feedback
+        alert('Markdown in Zwischenablage kopiert!');
+    });
 }
 
 // Close kick modal when clicking outside
