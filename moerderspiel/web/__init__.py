@@ -273,7 +273,7 @@ def player(service: PlayerService):
                            game=service.player.game,
                            player_circle_set=service.player.circle_sets,
                            completed_missions=Mission.completed_missions_in_game_by_owner(service.player.game, service.player),
-                           open_missions=service.get_current_missions)
+                           open_missions=service.get_current_missions())
 
 
 @app.get('/game/<game_id>/graph.svg')

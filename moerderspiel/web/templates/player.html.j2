@@ -42,6 +42,43 @@
     </form>
     {% endif %}
 
-<!-- TODO more content-->
+    {% if game.started and open_missions %}
+        <article>
+            <header>
+                <h3>Deine aktuellen Ziele</h3>
+            </header>
+            {% if player.alive %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Ziel</th>
+                            <th>Gruppe</th>
+                            <th>Kreis</th>
+                            <th>Code</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for mission in open_missions %}
+                            <tr>
+                                <td>{{ mission.victim.name }}</td>
+                                <td>{{ mission.victim.group }}</td>
+                                <td>{{ mission.circle.name }}</td>
+                                <td><code>{{ mission.code }}</code></td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p><em>Du bist nicht mehr am Leben und hast keine aktiven Ziele.</em></p>
+            {% endif %}
+        </article>
+    {% elif game.started %}
+        <article>
+            <header>
+                <h3>Deine aktuellen Ziele</h3>
+            </header>
+            <p><em>Du hast derzeit keine aktiven Ziele.</em></p>
+        </article>
+    {% endif %}
 
 {% endblock %}
