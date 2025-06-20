@@ -167,3 +167,21 @@ class ChooseCirclesetForm(Form):
         super().__init__(*args, **kwargs)
         if game.circles:
             self.circle_sets.choices = list(set([(c.set, c.set) for c in game.circles if c.set]))
+
+
+class EditRulesForm(Form):
+    form_id = "edit-rules"
+
+    rules = TextAreaField('Spielregeln (Markdown)',
+                         [validators.Length(max=constants.MAX_RULES_LENGTH)],
+                         render_kw={"rows": 20},
+                         description="""
+                         Geben Sie hier die Regeln des Spiels in Markdown-Format ein.
+                         Diese werden den Spielern angezeigt, wenn sie auf "Spielregeln" klicken.
+                         """)
+
+    def __init__(self, game: Game, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Nur bei GET-Anfragen (wenn keine formdata vorhanden ist) das Feld mit aktuellen Regeln befüllen
+        if not args and not kwargs.get('formdata'):
+            self.rules.data = game.rules or "Noch kein Regeltext hinzugefügt."

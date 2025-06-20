@@ -1,0 +1,69 @@
+{% extends "_base.html.j2" %}
+
+{% block main %}
+<article>
+    <header>
+        <h1>Spielregeln: {{ game.title }}</h1>
+    </header>
+    <main>
+        <div class="rules-content">
+            {{ rules_html | safe }}
+        </div>
+    </main>
+    <footer>
+        <a role="button" class="secondary" href="/game/{{ game.id }}">Zurück zum Spiel</a>
+    </footer>
+</article>
+{% endblock %}
+
+{% block head %}
+<style>
+.rules-content {
+    line-height: 1.6;
+}
+
+.rules-content h1,
+.rules-content h2,
+.rules-content h3,
+.rules-content h4,
+.rules-content h5,
+.rules-content h6 {
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+}
+
+.rules-content ul,
+.rules-content ol {
+    padding-left: 2em;
+}
+
+.rules-content li {
+    margin-bottom: 0.5em;
+}
+
+.rules-content p {
+    margin-bottom: 1em;
+}
+
+.rules-content code {
+    background-color: var(--pico-code-background-color);
+    padding: 0.2em 0.4em;
+    border-radius: 0.25em;
+    font-family: monospace;
+}
+
+.rules-content pre {
+    background-color: var(--pico-code-background-color);
+    padding: 1em;
+    border-radius: 0.5em;
+    overflow-x: auto;
+}
+
+.rules-content blockquote {
+    border-left: 4px solid var(--pico-primary);
+    padding-left: 1em;
+    margin-left: 0;
+    font-style: italic;
+}
+</style>
+{% endblock %}

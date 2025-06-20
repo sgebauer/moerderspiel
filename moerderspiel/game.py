@@ -223,6 +223,13 @@ class GameService:
     def flush_changes(self):
         self.game.flush_changes()
 
+    def update_rules(self, rules: str):
+        """Update the game rules."""
+        try:
+            self.game.rules = rules if rules else "Noch kein Regeltext hinzugefügt."
+        except Exception as e:
+            raise GameError(f"Fehler beim Aktualisieren der Regeln: {str(e)}")
+
     def sanitize_game_data(self):
         """
         Hacky helper method to sanitize the contents of the database.

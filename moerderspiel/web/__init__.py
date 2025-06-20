@@ -3,6 +3,7 @@ from functools import wraps
 
 import flask
 import jwt
+import markdown
 from flask import Flask, render_template, send_from_directory, request, url_for, redirect, flash, abort, session
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import TimeoutError, OperationalError
@@ -12,7 +13,7 @@ from moerderspiel import config, graph, pdf, notification
 from moerderspiel.game import GameService, GameError
 from moerderspiel.player import PlayerService
 from moerderspiel.web.forms import AddPlayerForm, PlayerLoginForm, CreateGameForm, RecordMurderForm, \
-    GameMasterLoginForm, AddCircleForm, ChooseCirclesetForm
+    GameMasterLoginForm, AddCircleForm, ChooseCirclesetForm, EditRulesForm
 
 
 app = Flask(__name__)
@@ -283,6 +284,59 @@ def game_wall(service: GameService):
 @needs_gamemaster_authentication
 def game_missions(service: GameService):
     return flask.send_file(pdf.generate_game_mission_sheets(service.game))
+
+
+@app.route('/rules/<game_id>', methods=['GET'])
+@with_game_service
+def game_rules(service: GameService):
+    import markdown
+    
+    rules_text = service.game.rules or "Noch kein Regeltext hinzugefügt."
+    rules_html = markdown.markdown(rules_text)
+    
+    return render_template('rules.html.j2',
+                           game=service.game,
+                           rules_html=rules_html)
+
+
+@app.route('/gamemaster/<game_id>/edit-rules', methods=['GET', 'POST'])
+@with_game_service
+@needs_gamemaster_authentication
+def edit_rules(service: GameService):
+    if request.method == 'POST':
+        edit_rules_form = EditRulesForm(service.game, formdata=request.form)
+    else:
+        edit_rules_form = EditRulesForm(service.game)
+    
+    if request.method == 'POST':
+        print(f"POST request received. Form data: {request.form}")
+        print(f"Form ID in request: {request.form.get('form')}")
+        print(f"Expected form ID: {edit_rules_form.form_id}")
+        
+        if request.form.get('form') == edit_rules_form.form_id:
+            print("Form ID matches, validating...")
+            if edit_rules_form.validate():
+                print(f"Validation successful. Rules data: {edit_rules_form.rules.data}")
+                try:
+                    service.update_rules(edit_rules_form.rules.data)
+                    db.session.commit()
+                    flash('Spielregeln aktualisiert', 'success')
+                    return redirect(url_for('gamemaster', game_id=service.game.id))
+                except Exception as e:
+                    print(f"Error updating rules: {str(e)}")
+                    flash(f'Fehler beim Speichern der Regeln: {str(e)}', 'error')
+            else:
+                print(f"Validation failed. Errors: {edit_rules_form.errors}")
+                # Validierungsfehler anzeigen
+                for field, errors in edit_rules_form.errors.items():
+                    for error in errors:
+                        flash(f'Fehler in {field}: {error}', 'error')
+        else:
+            print("Form ID does not match")
+    
+    return render_template('edit_rules.html.j2',
+                           game=service.game,
+                           edit_rules_form=edit_rules_form)
 
 
 @app.get('/game/<game_id>/missions/<player_name>.pdf')

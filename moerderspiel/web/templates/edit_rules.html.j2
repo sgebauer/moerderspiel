@@ -1,0 +1,58 @@
+{% extends "_base.html.j2" %}
+
+{% block main %}
+<article>
+    <header>
+        <h1>Spielregeln bearbeiten: {{ game.title }}</h1>
+    </header>
+    <main>
+        <form method="post">
+            {{ render_field(edit_rules_form.rules) }}
+            
+            <div class="grid">
+                <button type="submit" name="form" value="{{ edit_rules_form.form_id }}" class="primary">
+                    Spielregeln speichern
+                </button>
+                <a role="button" class="secondary" href="/gamemaster/{{ game.id }}">
+                    Abbrechen
+                </a>
+            </div>
+        </form>
+    </main>
+    <footer>
+        <small>
+            <strong>Markdown-Hilfe:</strong>
+            <br>
+            <code># Überschrift 1</code>, <code>## Überschrift 2</code>, <code>### Überschrift 3</code>
+            <br>
+            <code>**fett**</code>, <code>*kursiv*</code>, <code>`code`</code>
+            <br>
+            <code>- Aufzählungspunkt</code>, <code>1. Nummerierte Liste</code>
+            <br>
+            <code>[Link-Text](URL)</code>
+        </small>
+    </footer>
+</article>
+{% endblock %}
+
+{% block head %}
+<style>
+textarea {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.9em;
+    line-height: 1.4;
+}
+
+footer small {
+    color: var(--pico-color-muted);
+    line-height: 1.4;
+}
+
+footer code {
+    background-color: var(--pico-code-background-color);
+    padding: 0.1em 0.3em;
+    border-radius: 0.2em;
+    font-size: 0.85em;
+}
+</style>
+{% endblock %}

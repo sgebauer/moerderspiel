@@ -60,6 +60,11 @@ class Game(Base):
     """
     gamemaster_password: Mapped[str]
 
+    """
+    The rules of the game in Markdown format.
+    """
+    rules: Mapped[Optional[str]] = mapped_column(String(constants.MAX_RULES_LENGTH), default="Noch kein Regeltext hinzugefügt.")
+
     endtime: Mapped[Optional[datetime]]
 
     circles: Mapped[List["Circle"]] = relationship(back_populates="game")
