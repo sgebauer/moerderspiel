@@ -4,42 +4,79 @@
     <article id="player-options-for-game">
         <header>
             <h1>
-                Player: {{ player.name }}
+                {% if is_gamemaster_view is defined and is_gamemaster_view %}
+                    Player: {{ player.name }} <small>(Gamemaster-Ansicht)</small>
+                {% else %}
+                    Player: {{ player.name }}
+                {% endif %}
             </h1>
-            <form method="post" style="text-align: right;">
-                    {% if game.started %}
-                        <a role="button" class="primary" target="_blank" title="Aufträge herunterladen"
-                           href="{{ url_for('player_missions', game_id=game.id, player_name=player.name) }}"
-                           {{ '' if player.alive else 'disabled' }}>
-                            {{ icon("file-document-outline") }}
-                        </a>
-                        <button class="primary" name="action" value="resend-player-missions" title="Aufträge neu versenden"
-                                {{ '' if player.alive and player.notifiable else 'disabled' }}>
-                            {{ icon("email-sync-outline") }}
-                        </button>
-                    {% endif %}
-                </form>
+            {% if not (is_gamemaster_view is defined and is_gamemaster_view) %}
+                <form method="post" style="text-align: right;">
+                        {% if game.started %}
+                            <a role="button" class="primary" target="_blank" title="Aufträge herunterladen"
+                               href="{{ url_for('player_missions', game_id=game.id, player_name=player.name) }}"
+                               {{ '' if player.alive else 'disabled' }}>
+                                {{ icon("file-document-outline") }}
+                            </a>
+                            <button type="button" class="primary" onclick="showPlayerResendConfirmation()" title="Aufträge neu versenden"
+                                    {{ '' if player.alive and player.notifiable else 'disabled' }}>
+                                {{ icon("email-sync-outline") }}
+                            </button>
+                        {% endif %}
+                    </form>
+            {% else %}
+                <div style="text-align: right;">
+                    <a role="button" class="secondary" href="{{ url_for('gamemaster', game_id=game.id) }}">
+                        ← Zurück zum Gamemaster-Bereich
+                    </a>
+                </div>
+            {% endif %}
         </header>
     </article>
 
     {% if not game.started %}
-        <form method='POST'>
-            <h3> Kreissets auswählen</h3>
-            {% for value, label in circle_set_form.circle_sets.choices %}
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox"
-                    name="circle_sets" value="{{ value }}"
-                    id="circle_sets_{{ loop.index }}"
-                    {% if value in circle_set_form.circle_sets.data or value in player_circle_sets%}
-                           checked
-                    {% endif %}>
-                    <label class="form-check-label" for="circle_sets_{{ loop.index }}">
-                    {{ label }}
-                    </label>
-                </div>
-            {% endfor %}
-        <button type="submit" name="form" value="{{ circle_set_form.form_id }}">Kreise ändern</button>
-    </form>
+        {% if is_gamemaster_view is defined and is_gamemaster_view %}
+            <article>
+                <header>
+                    <h3>Kreissets (Gamemaster-Ansicht)</h3>
+                </header>
+                <p><strong>Hinweis:</strong> Als Gamemaster können Sie die Kreissets des Spielers einsehen und bearbeiten.</p>
+                <form method='POST'>
+                    {% for value, label in circle_set_form.circle_sets.choices %}
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox"
+                            name="circle_sets" value="{{ value }}"
+                            id="circle_sets_{{ loop.index }}"
+                            {% if value in circle_set_form.circle_sets.data or value in player_circle_sets%}
+                                   checked
+                            {% endif %}>
+                            <label class="form-check-label" for="circle_sets_{{ loop.index }}">
+                            {{ label }}
+                            </label>
+                        </div>
+                    {% endfor %}
+                <button type="submit" name="form" value="{{ circle_set_form.form_id }}">Kreise ändern</button>
+            </form>
+            </article>
+        {% else %}
+            <form method='POST'>
+                <h3> Kreissets auswählen</h3>
+                {% for value, label in circle_set_form.circle_sets.choices %}
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox"
+                        name="circle_sets" value="{{ value }}"
+                        id="circle_sets_{{ loop.index }}"
+                        {% if value in circle_set_form.circle_sets.data or value in player_circle_sets%}
+                               checked
+                        {% endif %}>
+                        <label class="form-check-label" for="circle_sets_{{ loop.index }}">
+                        {{ label }}
+                        </label>
+                    </div>
+                {% endfor %}
+            <button type="submit" name="form" value="{{ circle_set_form.form_id }}">Kreise ändern</button>
+        </form>
+        {% endif %}
     {% endif %}
 
     {% if game.started and open_missions %}
@@ -80,5 +117,60 @@
             <p><em>Du hast derzeit keine aktiven Ziele.</em></p>
         </article>
     {% endif %}
+
+<!-- Modal for resend confirmation -->
+<dialog id="player-resend-modal">
+    <article>
+        <header>
+            <a href="#" aria-label="Close" rel="prev" onclick="closePlayerResendModal()"></a>
+            <p><strong>Aufträge neu versenden</strong></p>
+        </header>
+        <main>
+            <p>Möchten Sie Ihre Aufträge wirklich neu anfordern?</p>
+            <p><small>Eine E-Mail mit Ihren aktuellen Aufträgen wird an Sie gesendet.</small></p>
+        </main>
+        <footer>
+            <button type="button" class="secondary" onclick="closePlayerResendModal()">Abbrechen</button>
+            <button type="button" class="primary" onclick="confirmPlayerResend()">Aufträge versenden</button>
+        </footer>
+    </article>
+</dialog>
+
+<script>
+function showPlayerResendConfirmation() {
+    const modal = document.getElementById('player-resend-modal');
+    modal.showModal();
+}
+
+function closePlayerResendModal() {
+    const modal = document.getElementById('player-resend-modal');
+    modal.close();
+}
+
+function confirmPlayerResend() {
+    // Create and submit form
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.style.display = 'none';
+    
+    const actionInput = document.createElement('input');
+    actionInput.type = 'hidden';
+    actionInput.name = 'action';
+    actionInput.value = 'resend-player-missions';
+    
+    form.appendChild(actionInput);
+    document.body.appendChild(form);
+    form.submit();
+    
+    closePlayerResendModal();
+}
+
+// Close modal when clicking outside
+document.getElementById('player-resend-modal').addEventListener('click', function(event) {
+    if (event.target === this) {
+        closePlayerResendModal();
+    }
+});
+</script>
 
 {% endblock %}

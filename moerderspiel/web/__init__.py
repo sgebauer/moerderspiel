@@ -276,6 +276,50 @@ def player(service: PlayerService):
                            open_missions=service.get_current_missions())
 
 
+@app.route('/gamemaster/<game_id>/player/<player_name>', methods=['GET', 'POST'])
+@with_game_service
+@needs_gamemaster_authentication
+def gamemaster_player_view(service: GameService, player_name: str):
+    """Gamemaster view of a specific player's page"""
+    try:
+        player = service.get_player(player_name)
+        player_service = PlayerService(player)
+        
+        circle_set_form = ChooseCirclesetForm(player.game, request.form)
+
+        if request.method == 'POST' and request.form['form'] == circle_set_form.form_id:
+            try:
+                in_circles = []
+                for circle_set in circle_set_form.circle_sets.data:
+                    in_circles += Circle.by_game_and_set(player.game, circle_set)
+                in_circles = list(set(in_circles))
+
+                out_circles = [c for c in player.game.circles if c not in in_circles]
+
+                for circle in in_circles:
+                    player_service.add_player_to_circle(circle)
+                for circle in out_circles:
+                    player_service.remove_player_from_circle(circle)
+                player.circleset_string = '|'.join(c.name for c in in_circles)
+                db.session.commit()
+
+                flash('Teilnahme an Sets geändert', 'success')
+            except GameError as e:
+                flash(str(e), 'error')
+
+        return render_template('player.html.j2',
+                               circle_set_form=circle_set_form,
+                               player=player,
+                               game=player.game,
+                               player_circle_set=player.circle_sets,
+                               completed_missions=Mission.completed_missions_in_game_by_owner(player.game, player),
+                               open_missions=player_service.get_current_missions(),
+                               is_gamemaster_view=True)
+    except Exception as e:
+        flash(f'Spieler "{player_name}" nicht gefunden', 'error')
+        return redirect(url_for('gamemaster', game_id=service.game.id))
+
+
 @app.get('/game/<game_id>/graph.svg')
 @with_game_service
 def game_graph(service: GameService):

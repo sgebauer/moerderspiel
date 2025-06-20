@@ -56,13 +56,16 @@
                                {{ '' if player.alive else 'disabled' }}>
                                 {{ icon("file-document-outline") }}
                             </a>
-                            <button class="primary" name="action" value="resend-player-missions" title="Aufträge neu versenden"
+                            <button type="button" class="primary" onclick="showResendConfirmation('{{ player.name }}', '{{ game.id }}')" title="Aufträge neu versenden"
                                     {{ '' if player.alive and player.notifiable else 'disabled' }}>
                                 {{ icon("email-sync-outline") }}
                             </button>
-                            <button type="button" class="secondary" onclick="showTargetJobs('{{ player.name }}', '{{ game.id }}')" title="Aufträge auf diesen Spieler anzeigen">
-                                Ziele anzeigen
+                            <button type="button" class="secondary" onclick="showTargetJobs('{{ player.name }}', '{{ game.id }}')" title="Potentielle Mörder anzeigen - Wer versucht diesen Spieler zu töten?">
+                                {{ icon("crosshairs-gps") }}
                             </button>
+                            <a role="button" class="secondary" href="{{ url_for('gamemaster_player_view', game_id=game.id, player_name=player.name) }}" title="Spielerseite anzeigen">
+                                {{ icon("account-outline") }}
+                            </a>
                             <button type="button" class="contrast" onclick="showKickModal('{{ player.name }}', '{{ game.id }}')" title="Spieler kicken"
                                     {{ '' if player.alive else 'disabled' }}>
                                 {{ icon("account-cancel-outline") }}
@@ -199,6 +202,24 @@
         <footer>
             <button type="button" class="secondary" onclick="closeKickModal()">Abbrechen</button>
             <button type="button" class="contrast" id="confirm-kick-btn" onclick="confirmKick()">Spieler kicken</button>
+        </footer>
+    </article>
+</dialog>
+
+<!-- Modal for resend confirmation -->
+<dialog id="resend-modal">
+    <article>
+        <header>
+            <a href="#" aria-label="Close" rel="prev" onclick="closeResendModal()"></a>
+            <p><strong id="resend-modal-title">Aufträge neu versenden</strong></p>
+        </header>
+        <main id="resend-modal-content">
+            <p>Möchten Sie die Aufträge wirklich neu an <strong id="resend-player-name"></strong> versenden?</p>
+            <p><small>Eine E-Mail mit den aktuellen Aufträgen wird an den Spieler gesendet.</small></p>
+        </main>
+        <footer>
+            <button type="button" class="secondary" onclick="closeResendModal()">Abbrechen</button>
+            <button type="button" class="primary" id="confirm-resend-btn" onclick="confirmResend()">Aufträge versenden</button>
         </footer>
     </article>
 </dialog>
@@ -465,6 +486,58 @@ function copyMissionTransfersAsMarkdown() {
 document.getElementById('kick-modal').addEventListener('click', function(event) {
     if (event.target === this) {
         closeKickModal();
+    }
+});
+
+// Resend confirmation modal functions
+let pendingResendData = null;
+
+function showResendConfirmation(playerName, gameId) {
+    const modal = document.getElementById('resend-modal');
+    const playerNameElement = document.getElementById('resend-player-name');
+    
+    playerNameElement.textContent = playerName;
+    pendingResendData = { playerName, gameId };
+    
+    modal.showModal();
+}
+
+function closeResendModal() {
+    const modal = document.getElementById('resend-modal');
+    modal.close();
+    pendingResendData = null;
+}
+
+function confirmResend() {
+    if (!pendingResendData) return;
+    
+    // Create and submit form
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.style.display = 'none';
+    
+    const playerInput = document.createElement('input');
+    playerInput.type = 'hidden';
+    playerInput.name = 'player';
+    playerInput.value = pendingResendData.playerName;
+    
+    const actionInput = document.createElement('input');
+    actionInput.type = 'hidden';
+    actionInput.name = 'action';
+    actionInput.value = 'resend-player-missions';
+    
+    form.appendChild(playerInput);
+    form.appendChild(actionInput);
+    document.body.appendChild(form);
+    form.submit();
+    
+    closeResendModal();
+}
+
+// Close resend modal when clicking outside
+document.getElementById('resend-modal').addEventListener('click', function(event) {
+    if (event.target === this) {
+        closeResendModal();
     }
 });
 </script>
