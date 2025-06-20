@@ -5,6 +5,7 @@ import flask
 import jwt
 from flask import Flask, render_template, send_from_directory, request, url_for, redirect, flash, abort, session
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.exc import TimeoutError, OperationalError
 
 from moerderspiel.db import Base, Game, Mission, Circle, Player, NotificationAddressType
 from moerderspiel import config, graph, pdf, notification
@@ -350,5 +351,128 @@ def mass_murderer_per_circleset(game: Game) -> dict : #TODO hier stimmt was ned,
         else:
             ret[circle.set] = Mission.mass_murderers_by_circle(game, circle)
     return ret
+
+
+
+@app.errorhandler(404)
+def page_not_found(error):
+    """Handle 404 errors with a custom error page."""
+    return render_template('404.html.j2'), 404
+
+
+@app.errorhandler(500)
+def internal_server_error(error):
+    """Handle 500 errors with a custom error page."""
+    return render_template('error.html.j2', 
+                         error_code=500,
+                         error_title="Interner Serverfehler",
+                         error_message="Es ist ein unerwarteter Fehler aufgetreten. Das Spiel wurde unterbrochen!"), 500
+
+
+@app.errorhandler(403)
+def forbidden(error):
+    """Handle 403 errors with a custom error page."""
+    return render_template('error.html.j2',
+                         error_code=403,
+                         error_title="Zugriff verweigert",
+                         error_message="Sie haben keine Berechtigung, auf diese Seite zuzugreifen. Nur echte Mörder dürfen hier rein!"), 403
+
+
+@app.errorhandler(400)
+def bad_request(error):
+    """Handle 400 errors with a custom error page."""
+    return render_template('error.html.j2',
+                         error_code=400,
+                         error_title="Ungültige Anfrage",
+                         error_message="Die Anfrage konnte nicht verarbeitet werden. Bitte überprüfen Sie Ihre Eingabe."), 400
+
+
+@app.errorhandler(408)
+def request_timeout(error):
+    """Handle 408 request timeout errors."""
+    return render_template('error.html.j2',
+                         error_code=408,
+                         error_title="Zeitüberschreitung",
+                         error_message="Die Anfrage hat zu lange gedauert. Auch ein perfekter Mord braucht Zeit, aber nicht so viel!"), 408
+
+
+@app.errorhandler(504)
+def gateway_timeout(error):
+    """Handle 504 gateway timeout errors."""
+    return render_template('error.html.j2',
+                         error_code=504,
+                         error_title="Gateway Zeitüberschreitung",
+                         error_message="Der Server antwortet nicht rechtzeitig. Das Spiel scheint pausiert zu sein."), 504
+
+
+@app.errorhandler(502)
+def bad_gateway(error):
+    """Handle 502 bad gateway errors."""
+    return render_template('error.html.j2',
+                         error_code=502,
+                         error_title="Gateway Fehler",
+                         error_message="Der Server ist vorübergehend nicht erreichbar. Bitte versuchen Sie es später erneut."), 502
+
+
+@app.errorhandler(503)
+def service_unavailable(error):
+    """Handle 503 service unavailable errors."""
+    return render_template('error.html.j2',
+                         error_code=503,
+                         error_title="Dienst nicht verfügbar",
+                         error_message="Der Server ist überlastet oder wartungsbedingt nicht verfügbar. Das Spiel ist temporär pausiert."), 503
+
+
+@app.errorhandler(Exception)
+def handle_exception(error):
+    """Handle any unhandled exceptions."""
+    # Check for database timeout errors
+    if isinstance(error, (TimeoutError, OperationalError)):
+        if 'timeout' in str(error).lower():
+            return render_template('error.html.j2',
+                                 error_code=408,
+                                 error_title="Datenbank Zeitüberschreitung",
+                                 error_message="Die Datenbank antwortet nicht rechtzeitig. Das Spiel läuft gerade sehr langsam."), 408
+    
+    # Check if it's a timeout-related exception
+    if 'timeout' in str(error).lower() or 'timed out' in str(error).lower():
+        return render_template('error.html.j2',
+                             error_code=408,
+                             error_title="Zeitüberschreitung",
+                             error_message="Die Verbindung wurde wegen Zeitüberschreitung unterbrochen. Versuchen Sie es erneut."), 408
+    
+    # For development, you might want to see the actual error
+    # In production, log the error and show a generic message
+    app.logger.error(f"Unhandled exception: {error}")
+    
+    return render_template('error.html.j2',
+                         error_code=500,
+                         error_title="Unerwarteter Fehler",
+                         error_message="Es ist ein unerwarteter Fehler aufgetreten. Das Spiel wurde unterbrochen!"), 500
+
+
+@app.errorhandler(TimeoutError)
+def handle_timeout_error(error):
+    """Handle SQLAlchemy timeout errors specifically."""
+    return render_template('error.html.j2',
+                         error_code=408,
+                         error_title="Datenbank Zeitüberschreitung",
+                         error_message="Die Datenbank-Verbindung ist zeitüberschritten. Bitte versuchen Sie es erneut."), 408
+
+
+@app.errorhandler(OperationalError)
+def handle_operational_error(error):
+    """Handle SQLAlchemy operational errors that might include timeouts."""
+    if 'timeout' in str(error).lower():
+        return render_template('error.html.j2',
+                             error_code=408,
+                             error_title="Datenbank Zeitüberschreitung",
+                             error_message="Die Datenbank antwortet nicht rechtzeitig. Bitte haben Sie etwas Geduld."), 408
+    else:
+        app.logger.error(f"Database operational error: {error}")
+        return render_template('error.html.j2',
+                             error_code=503,
+                             error_title="Datenbankfehler",
+                             error_message="Es gibt ein Problem mit der Datenbank. Bitte versuchen Sie es später erneut."), 503
 
 

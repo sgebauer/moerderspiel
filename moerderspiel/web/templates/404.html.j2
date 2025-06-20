@@ -1,0 +1,83 @@
+{% extends "_base.html.j2" %}
+
+{% block head %}
+<style>
+.error-container {
+    text-align: center;
+    padding: 2rem 0;
+}
+
+.error-code {
+    font-size: 6rem;
+    font-weight: bold;
+    color: var(--pico-color-primary);
+    margin: 0;
+    line-height: 1;
+}
+
+.error-title {
+    font-size: 2rem;
+    margin: 1rem 0;
+    color: var(--pico-color);
+}
+
+.error-message {
+    font-size: 1.2rem;
+    color: var(--pico-color-muted);
+    margin: 1rem 0 2rem 0;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.error-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 2rem;
+}
+
+.error-illustration {
+    font-size: 3rem;
+    margin: 1rem 0;
+    opacity: 0.7;
+}
+
+@media (max-width: 768px) {
+    .error-code {
+        font-size: 4rem;
+    }
+    
+    .error-title {
+        font-size: 1.5rem;
+    }
+    
+    .error-message {
+        font-size: 1rem;
+    }
+    
+    .error-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+}
+</style>
+{% endblock %}
+
+{% block main %}
+<div class="error-container">
+    <div class="error-illustration">🎯</div>
+    <h1 class="error-code">404</h1>
+    <h2 class="error-title">Seite nicht gefunden</h2>
+    <p class="error-message">
+        Die gesuchte Seite existiert nicht oder wurde möglicherweise verschoben. 
+        Wie bei einem guten Mörderspiel ist das Ziel verschwunden!
+    </p>
+    
+    <div class="error-actions">
+        <a href="/" role="button">Zur Startseite</a>
+        <a href="javascript:history.back()" role="button" class="outline">Zurück</a>
+    </div>
+</div>
+{% endblock %}
