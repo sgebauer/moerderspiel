@@ -199,7 +199,24 @@ def gamemaster(service: GameService):
             elif request.form['action'] == 'delete-player':
                 service.delete_player(request.form['player'])
             elif request.form['action'] == 'kick-player':
-                service.kick_player(request.form['player'], datetime.datetime.now(), "Spieler wurde gekickt")
+                # Get kick preview info first
+                kick_info = service.get_kick_preview(request.form['player'])
+                # Store in session for the confirmation modal
+                session['pending_kick'] = {
+                    'player_name': request.form['player'],
+                    'kick_info': kick_info
+                }
+                # Return JSON response for AJAX handling
+                return flask.jsonify({
+                    'action': 'show_kick_modal',
+                    'kick_info': kick_info
+                })
+            elif request.form['action'] == 'confirm-kick-player':
+                # Actually kick the player
+                player_name = request.form['player']
+                service.kick_player(player_name, datetime.datetime.now(), "Spieler wurde gekickt")
+                # Clear pending kick from session
+                session.pop('pending_kick', None)
             elif request.form['action'] == 'resend-player-missions':
                 service.send_mission_update(request.form['player'])
             elif request.form['action'] == 'delete-circle':
@@ -487,18 +504,39 @@ def player_target_jobs(service: GameService, player_name: str):
         target_jobs = []
         
         for mission in player.victim_missions:
+            # Handle current owner safely (might be None for completed missions)
+            current_owner_name = None
+            if service.game.started and not mission.completed:
+                try:
+                    current_owner_name = mission.current_owner.name
+                except AttributeError:
+                    # current_owner might be None in some edge cases
+                    current_owner_name = None
+            
             target_jobs.append({
                 'mission_id': mission.position,
                 'circle_name': mission.circle.name,
                 'circle_set': mission.circle.set,
-                'killer_name': mission.killer.name if mission.killer else None,
+                'killer_name': mission.killer.name if mission.killer else "Gekickt/Admin",
                 'mission_code': mission.code if service.game.started else None,
                 'completed': mission.completion_date is not None,
                 'completed_at': mission.completion_date.isoformat() if mission.completion_date else None,
-                'current_owner': mission.current_owner.name if service.game.started and not mission.completed else None
+                'current_owner': current_owner_name
             })
         
         return flask.jsonify(target_jobs)
+    except GameError as e:
+        return flask.jsonify({'error': str(e)}), 400
+
+
+@app.get('/gamemaster/<game_id>/player/<player_name>/kick_preview')
+@with_game_service
+@needs_gamemaster_authentication
+def kick_preview(service: GameService, player_name: str):
+    """Get preview of what happens when a player is kicked"""
+    try:
+        kick_info = service.get_kick_preview(player_name)
+        return flask.jsonify(kick_info)
     except GameError as e:
         return flask.jsonify({'error': str(e)}), 400
 

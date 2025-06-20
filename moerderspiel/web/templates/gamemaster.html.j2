@@ -63,7 +63,7 @@
                             <button type="button" class="secondary" onclick="showTargetJobs('{{ player.name }}', '{{ game.id }}')" title="Aufträge auf diesen Spieler anzeigen">
                                 Ziele anzeigen
                             </button>
-                            <button class="contrast" name="action" value="kick-player" title="Spieler kicken"
+                            <button type="button" class="contrast" onclick="showKickModal('{{ player.name }}', '{{ game.id }}')" title="Spieler kicken"
                                     {{ '' if player.alive else 'disabled' }}>
                                 {{ icon("account-cancel-outline") }}
                             </button>
@@ -186,6 +186,23 @@
     </article>
 </dialog>
 
+<!-- Modal for kick confirmation -->
+<dialog id="kick-modal">
+    <article>
+        <header>
+            <a href="#" aria-label="Close" rel="prev" onclick="closeKickModal()"></a>
+            <p><strong id="kick-modal-title">Spieler kicken</strong></p>
+        </header>
+        <main id="kick-modal-content">
+            <p>Lade Daten...</p>
+        </main>
+        <footer>
+            <button type="button" class="secondary" onclick="closeKickModal()">Abbrechen</button>
+            <button type="button" class="contrast" id="confirm-kick-btn" onclick="confirmKick()">Spieler kicken</button>
+        </footer>
+    </article>
+</dialog>
+
 <script>
 function showTargetJobs(playerName, gameId) {
     const modal = document.getElementById('player-jobs-modal');
@@ -235,9 +252,17 @@ function showTargetJobs(playerName, gameId) {
             `;
             
             data.forEach(job => {
-                const status = job.completed ? 
-                    '<span style="color: red;">Erledigt</span>' : 
-                    '<span style="color: green;">Offen</span>';
+                let status;
+                if (job.completed) {
+                    if (job.killer_name === "Gekickt/Admin") {
+                        status = '<span style="color: orange;">Gekickt</span>';
+                    } else {
+                        status = '<span style="color: red;">Erledigt</span>';
+                    }
+                } else {
+                    status = '<span style="color: green;">Offen</span>';
+                }
+                
                 const completedAt = job.completed_at ? 
                     new Date(job.completed_at).toLocaleString('de-DE') : '';
                 const circleSet = job.circle_set ? ` (${job.circle_set})` : '';
@@ -272,6 +297,119 @@ function closeTargetJobsModal() {
 document.getElementById('player-jobs-modal').addEventListener('click', function(event) {
     if (event.target === this) {
         closeTargetJobsModal();
+    }
+});
+
+// Kick modal functions
+let pendingKickData = null;
+
+function showKickModal(playerName, gameId) {
+    const modal = document.getElementById('kick-modal');
+    const modalTitle = document.getElementById('kick-modal-title');
+    const modalContent = document.getElementById('kick-modal-content');
+    
+    modalTitle.textContent = `Spieler ${playerName} kicken`;
+    modalContent.innerHTML = '<p>Lade Auftragstransfers...</p>';
+    
+    // Show modal
+    modal.showModal();
+    
+    // Fetch kick preview data
+    fetch(`/gamemaster/${gameId}/player/${encodeURIComponent(playerName)}/kick_preview`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Fehler beim Laden der Daten');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.error) {
+                modalContent.innerHTML = `<p style="color: red;">Fehler: ${data.error}</p>`;
+                return;
+            }
+            
+            pendingKickData = { playerName, gameId };
+            
+            let html = `
+                <p><strong>Wenn Sie ${playerName} kicken, werden folgende Aufträge übertragen:</strong></p>
+            `;
+            
+            if (data.mission_transfers.length === 0) {
+                html += '<p>Dieser Spieler hat keine offenen Aufträge, die übertragen werden müssen.</p>';
+            } else {
+                html += `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Kreis</th>
+                                <th>Kreis-Set</th>
+                                <th>Neuer Jäger</th>
+                                <th>Neues Ziel</th>
+                                <th>Auftragscode</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                
+                data.mission_transfers.forEach(transfer => {
+                    const circleSet = transfer.circle_set ? ` (${transfer.circle_set})` : '';
+                    html += `
+                        <tr>
+                            <td>${transfer.circle_name}${circleSet}</td>
+                            <td>${transfer.circle_set || '-'}</td>
+                            <td><strong>${transfer.current_owner}</strong></td>
+                            <td>${transfer.next_target}</td>
+                            <td><code>${transfer.mission_code}</code></td>
+                        </tr>
+                    `;
+                });
+                
+                html += '</tbody></table>';
+                html += '<p><em>Diese Spieler werden automatisch über ihre neuen Aufträge benachrichtigt.</em></p>';
+            }
+            
+            modalContent.innerHTML = html;
+        })
+        .catch(error => {
+            modalContent.innerHTML = `<p style="color: red;">Fehler beim Laden der Daten: ${error.message}</p>`;
+        });
+}
+
+function closeKickModal() {
+    const modal = document.getElementById('kick-modal');
+    modal.close();
+    pendingKickData = null;
+}
+
+function confirmKick() {
+    if (!pendingKickData) {
+        return;
+    }
+    
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.style.display = 'none';
+    
+    const playerInput = document.createElement('input');
+    playerInput.type = 'hidden';
+    playerInput.name = 'player';
+    playerInput.value = pendingKickData.playerName;
+    
+    const actionInput = document.createElement('input');
+    actionInput.type = 'hidden';
+    actionInput.name = 'action';
+    actionInput.value = 'confirm-kick-player';
+    
+    form.appendChild(playerInput);
+    form.appendChild(actionInput);
+    document.body.appendChild(form);
+    form.submit();
+}
+
+// Close kick modal when clicking outside
+document.getElementById('kick-modal').addEventListener('click', function(event) {
+    if (event.target === this) {
+        closeKickModal();
     }
 });
 </script>
