@@ -60,6 +60,9 @@
                                     {{ '' if player.alive and player.notifiable else 'disabled' }}>
                                 {{ icon("email-sync-outline") }}
                             </button>
+                            <button type="button" class="secondary" onclick="showTargetJobs('{{ player.name }}', '{{ game.id }}')" title="Aufträge auf diesen Spieler anzeigen">
+                                Ziele anzeigen
+                            </button>
                             <button class="contrast" name="action" value="kick-player" title="Spieler kicken"
                                     {{ '' if player.alive else 'disabled' }}>
                                 {{ icon("account-cancel-outline") }}
@@ -169,4 +172,107 @@
     {% endwith %}
 </main>
 {% endcall %}
+
+<!-- Modal for showing player target jobs -->
+<dialog id="player-jobs-modal">
+    <article>
+        <header>
+            <a href="#" aria-label="Close" rel="prev" onclick="closeTargetJobsModal()"></a>
+            <p><strong id="modal-title">Aufträge auf Spieler</strong></p>
+        </header>
+        <main id="modal-content">
+            <p>Lade Daten...</p>
+        </main>
+    </article>
+</dialog>
+
+<script>
+function showTargetJobs(playerName, gameId) {
+    const modal = document.getElementById('player-jobs-modal');
+    const modalTitle = document.getElementById('modal-title');
+    const modalContent = document.getElementById('modal-content');
+    
+    modalTitle.textContent = `Aufträge auf ${playerName}`;
+    modalContent.innerHTML = '<p>Lade Daten...</p>';
+    
+    // Show modal
+    modal.showModal();
+    
+    // Fetch target jobs data
+    fetch(`/gamemaster/${gameId}/player/${encodeURIComponent(playerName)}/target_jobs`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Fehler beim Laden der Daten');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.error) {
+                modalContent.innerHTML = `<p style="color: red;">Fehler: ${data.error}</p>`;
+                return;
+            }
+            
+            if (data.length === 0) {
+                modalContent.innerHTML = '<p>Dieser Spieler ist in keinem Kreis eingetragen oder ist das Ziel keiner Aufträge.</p>';
+                return;
+            }
+            
+            // Build table
+            let html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Kreis</th>
+                            <th>Kreis-Set</th>
+                            <th>Status</th>
+                            <th>Auftragscode</th>
+                            <th>Aktueller Jäger</th>
+                            <th>Erledigt von</th>
+                            <th>Wann</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            data.forEach(job => {
+                const status = job.completed ? 
+                    '<span style="color: red;">Erledigt</span>' : 
+                    '<span style="color: green;">Offen</span>';
+                const completedAt = job.completed_at ? 
+                    new Date(job.completed_at).toLocaleString('de-DE') : '';
+                const circleSet = job.circle_set ? ` (${job.circle_set})` : '';
+                
+                html += `
+                    <tr>
+                        <td>${job.circle_name}${circleSet}</td>
+                        <td>${job.circle_set || '-'}</td>
+                        <td>${status}</td>
+                        <td>${job.mission_code || '-'}</td>
+                        <td>${job.current_owner || '-'}</td>
+                        <td>${job.killer_name || '-'}</td>
+                        <td>${completedAt}</td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table>';
+            modalContent.innerHTML = html;
+        })
+        .catch(error => {
+            modalContent.innerHTML = `<p style="color: red;">Fehler beim Laden der Daten: ${error.message}</p>`;
+        });
+}
+
+function closeTargetJobsModal() {
+    const modal = document.getElementById('player-jobs-modal');
+    modal.close();
+}
+
+// Close modal when clicking outside
+document.getElementById('player-jobs-modal').addEventListener('click', function(event) {
+    if (event.target === this) {
+        closeTargetJobsModal();
+    }
+});
+</script>
 {% endblock %}

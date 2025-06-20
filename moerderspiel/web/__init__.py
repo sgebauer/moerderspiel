@@ -477,3 +477,29 @@ def handle_operational_error(error):
                              error_message="Es gibt ein Problem mit der Datenbank. Bitte versuchen Sie es später erneut."), 503
 
 
+@app.get('/gamemaster/<game_id>/player/<player_name>/target_jobs')
+@with_game_service
+@needs_gamemaster_authentication
+def player_target_jobs(service: GameService, player_name: str):
+    """Get all jobs targeting a specific player"""
+    try:
+        player = service.get_player(player_name)
+        target_jobs = []
+        
+        for mission in player.victim_missions:
+            target_jobs.append({
+                'mission_id': mission.position,
+                'circle_name': mission.circle.name,
+                'circle_set': mission.circle.set,
+                'killer_name': mission.killer.name if mission.killer else None,
+                'mission_code': mission.code if service.game.started else None,
+                'completed': mission.completion_date is not None,
+                'completed_at': mission.completion_date.isoformat() if mission.completion_date else None,
+                'current_owner': mission.current_owner.name if service.game.started and not mission.completed else None
+            })
+        
+        return flask.jsonify(target_jobs)
+    except GameError as e:
+        return flask.jsonify({'error': str(e)}), 400
+
+
