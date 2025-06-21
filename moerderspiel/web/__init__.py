@@ -392,10 +392,6 @@ def edit_rules(service: GameService):
         edit_rules_form = EditRulesForm(service.game)
     
     if request.method == 'POST':
-        print(f"POST request received. Form data: {request.form}")
-        print(f"Form ID in request: {request.form.get('form')}")
-        print(f"Expected form ID: {edit_rules_form.form_id}")
-        
         if request.form.get('form') == edit_rules_form.form_id:
             if edit_rules_form.validate():
                 try:
@@ -404,7 +400,7 @@ def edit_rules(service: GameService):
                     flash('Spielregeln aktualisiert', 'success')
                     return redirect(url_for('gamemaster', game_id=service.game.id))
                 except Exception as e:
-                    log(f"[ERR]  Error saving rules: {str(e)}")
+                    print(f"[ERR]  Error saving rules: {str(e)}")
                     flash(f'Fehler beim Speichern der Regeln: {str(e)}', 'error')
             else:
                 # Validierungsfehler anzeigen
