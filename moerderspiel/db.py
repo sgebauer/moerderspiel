@@ -159,7 +159,7 @@ class Player(Base):
         return any(n for n in self.notification_addresses if n.active)
 
     @property
-    def circle_sets(self) -> [str]:
+    def circle_sets(self) -> List[str]:
         if not self.circleset_string:
             return []
         return self.circleset_string.split('|')
