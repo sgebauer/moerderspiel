@@ -13,7 +13,7 @@ from moerderspiel import config, graph, pdf, notification
 from moerderspiel.game import GameService, GameError
 from moerderspiel.player import PlayerService
 from moerderspiel.web.forms import AddPlayerForm, PlayerLoginForm, CreateGameForm, RecordMurderForm, \
-    GameMasterLoginForm, AddCircleForm, ChooseCirclesetForm, EditRulesForm, AdminLoginForm, ChangeGamemasterPasswordForm
+    GameMasterLoginForm, AddCircleForm, ChooseCirclesetForm, EditRulesForm, AdminLoginForm, ChangeGamemasterPasswordForm, UpdatePlayerEmailForm
 
 
 app = Flask(__name__)
@@ -192,7 +192,7 @@ def game(service: GameService):
 
     return render_template('game.html.j2',
                            game=service.game,
-                           completed_missions=Mission.completed_missions_in_game(service.game),
+                           completed_missions=Mission.completed_missions_in_game(service.game, exclude_kicks=True),
                            mass_murderers=Mission.mass_murderers_by_game(service.game),
                            completed_missions_circleset=completed_missions_per_circleset(service.game),
                            mass_murderers_circleset=mass_murderer_per_circleset(service.game),
@@ -257,7 +257,7 @@ def gamemaster(service: GameService):
 
     return render_template('gamemaster.html.j2',
                            game=service.game,
-                           completed_missions=Mission.completed_missions_in_game(service.game),
+                           completed_missions=Mission.completed_missions_in_game(service.game, exclude_kicks=True),
                            add_circle_form=add_circle_form,
                            is_admin_access=(config.ADMIN_ENABLED and session.get('admin_authenticated') and 
                                           service.game.id not in (session.get('gamemaster_authenticated') or [])))
@@ -268,6 +268,7 @@ def gamemaster(service: GameService):
 @needs_player_authentication
 def player(service: PlayerService):
     circle_set_form = ChooseCirclesetForm(service.player.game, request.form)
+    email_form = UpdatePlayerEmailForm(request.form)
 
     if request.method == 'POST' and request.form['form'] == circle_set_form.form_id:
         try:
@@ -289,13 +290,49 @@ def player(service: PlayerService):
             flash('Teilnahme an Sets geändert', 'success')
         except GameError as e:
             flash(str(e), 'error')
+    elif request.method == 'POST' and request.form['form'] == email_form.form_id:
+        if email_form.validate():
+            try:
+                # Remove existing email notification addresses
+                existing_email_addresses = [addr for addr in service.player.notification_addresses 
+                                          if addr.type == NotificationAddressType.email]
+                for addr in existing_email_addresses:
+                    db.session.delete(addr)
+                
+                # Add new email address if provided
+                if email_form.email.data:
+                    send_confirmation_message(service.player, NotificationAddressType.email, email_form.email.data)
+                    flash('E-Mail-Adresse aktualisiert. Bitte prüfen Sie Ihre E-Mails für die Bestätigung.', 'success')
+                else:
+                    flash('E-Mail-Benachrichtigungen wurden deaktiviert.', 'success')
+                
+                db.session.commit()
+            except Exception as e:
+                db.session.rollback()
+                flash(f'Fehler beim Aktualisieren der E-Mail-Adresse: {str(e)}', 'error')
+        else:
+            for field, errors in email_form.errors.items():
+                for error in errors:
+                    flash(f'E-Mail: {error}', 'error')
+
+    # Get current email address for form population
+    current_email = None
+    for addr in service.player.notification_addresses:
+        if addr.type == NotificationAddressType.email and addr.active:
+            current_email = addr.address
+            break
+    
+    # Populate email form with current address
+    if request.method == 'GET' and current_email:
+        email_form.email.data = current_email
 
     return render_template('player.html.j2',
                            circle_set_form=circle_set_form,
+                           email_form=email_form,
                            player=service.player,
                            game=service.player.game,
                            player_circle_set=service.player.circle_sets,
-                           completed_missions=Mission.completed_missions_in_game_by_owner(service.player.game, service.player),
+                           completed_missions=Mission.completed_missions_in_game_by_owner(service.player.game, service.player, exclude_kicks=True),
                            open_missions=service.get_current_missions())
 
 
@@ -309,6 +346,7 @@ def gamemaster_player_view(service: GameService, player_name: str):
         player_service = PlayerService(player)
         
         circle_set_form = ChooseCirclesetForm(player.game, request.form)
+        email_form = UpdatePlayerEmailForm(request.form)
 
         if request.method == 'POST' and request.form['form'] == circle_set_form.form_id:
             try:
@@ -329,13 +367,49 @@ def gamemaster_player_view(service: GameService, player_name: str):
                 flash('Teilnahme an Sets geändert', 'success')
             except GameError as e:
                 flash(str(e), 'error')
+        elif request.method == 'POST' and request.form['form'] == email_form.form_id:
+            if email_form.validate():
+                try:
+                    # Remove existing email notification addresses
+                    existing_email_addresses = [addr for addr in player.notification_addresses 
+                                              if addr.type == NotificationAddressType.email]
+                    for addr in existing_email_addresses:
+                        db.session.delete(addr)
+                    
+                    # Add new email address if provided
+                    if email_form.email.data:
+                        send_confirmation_message(player, NotificationAddressType.email, email_form.email.data)
+                        flash('E-Mail-Adresse aktualisiert. Bitte prüfen Sie Ihre E-Mails für die Bestätigung.', 'success')
+                    else:
+                        flash('E-Mail-Benachrichtigungen wurden deaktiviert.', 'success')
+                    
+                    db.session.commit()
+                except Exception as e:
+                    db.session.rollback()
+                    flash(f'Fehler beim Aktualisieren der E-Mail-Adresse: {str(e)}', 'error')
+            else:
+                for field, errors in email_form.errors.items():
+                    for error in errors:
+                        flash(f'E-Mail: {error}', 'error')
+
+        # Get current email address for form population
+        current_email = None
+        for addr in player.notification_addresses:
+            if addr.type == NotificationAddressType.email and addr.active:
+                current_email = addr.address
+                break
+        
+        # Populate email form with current address
+        if request.method == 'GET' and current_email:
+            email_form.email.data = current_email
 
         return render_template('player.html.j2',
                                circle_set_form=circle_set_form,
+                               email_form=email_form,
                                player=player,
                                game=player.game,
                                player_circle_set=player.circle_sets,
-                               completed_missions=Mission.completed_missions_in_game_by_owner(player.game, player),
+                               completed_missions=Mission.completed_missions_in_game_by_owner(player.game, player, exclude_kicks=True),
                                open_missions=player_service.get_current_missions(),
                                is_gamemaster_view=True)
     except Exception as e:
@@ -468,10 +542,12 @@ def completed_missions_per_circleset(game: Game) -> dict :
     ret = {}
     circles = Circle.by_game(game)
     for circle in circles:
+        # Exclude gamemaster kicks from public mission display
+        circle_missions = Mission.completed_missions_in_game_by_circle(game, circle, exclude_kicks=True)
         if circle.set and circle.set in ret:
-            ret[circle.set] = ret[circle.set] + Mission.completed_missions_in_game_by_circle(game, circle)
+            ret[circle.set] = ret[circle.set] + circle_missions
         else:
-            ret[circle.set] = Mission.completed_missions_in_game_by_circle(game, circle)
+            ret[circle.set] = circle_missions
     return ret
 
 def mass_murderer_per_circleset(game: Game) -> dict : #TODO hier stimmt was ned, da is leer wenn nciht sein sollte

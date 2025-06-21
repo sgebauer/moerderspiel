@@ -13,9 +13,9 @@
 
         <form method="post" class="grid">
             {% if not game.started %}
-            <button class="primary" name="action" value="start-game">Spiel starten</button>
+            <button type="button" class="primary" onclick="confirmStartGame()">Spiel starten</button>
             {% elif not game.ended %}
-            <button class="primary" name="action" value="end-game">Spiel abschließen</button>
+            <button type="button" class="primary" onclick="confirmEndGame()">Spiel abschließen</button>
             {% endif %}
 
             {% if game.started %}
@@ -80,7 +80,7 @@
                                 {{ icon("account-cancel-outline") }}
                             </button>
                             {% else %}
-                            <button class="contrast" name="action" value="delete-player" title="Spieler löschen">
+                            <button type="button" class="contrast" onclick="confirmDeletePlayer('{{ player.name }}')" title="Spieler löschen">
                                 {{ icon("trash-can-outline") }}
                             </button>
                             {% endif %}
@@ -154,7 +154,7 @@
                         <form method="post">
                             <input type="text" style="display: none;" name="circle" value="{{ circle.name }}"/>
                             {% if not game.started %}
-                            <button class="contrast" name="action" value="delete-circle" title="Kreis löschen">
+                            <button type="button" class="contrast" onclick="confirmDeleteCircle('{{ circle.name }}')" title="Kreis löschen">
                                 {{ icon("trash-can-outline") }}
                             </button>
                             {% endif %}
@@ -229,6 +229,75 @@
         <footer>
             <button type="button" class="secondary" onclick="closeResendModal()">Abbrechen</button>
             <button type="button" class="primary" id="confirm-resend-btn" onclick="confirmResend()">Aufträge versenden</button>
+        </footer>
+    </article>
+</dialog>
+
+<!-- Confirmation dialogs for destructive operations -->
+<dialog id="confirm-start-game-dialog">
+    <article>
+        <header>
+            <a href="#" aria-label="Close" rel="prev" onclick="closeDialog('confirm-start-game-dialog')"></a>
+            <p><strong>Spiel starten</strong></p>
+        </header>
+        <main>
+            <p>Sind Sie sicher, dass Sie das Spiel starten möchten?</p>
+            <p><small><strong>Achtung:</strong> Nach dem Start können keine neuen Spieler mehr hinzugefügt werden und die Aufträge werden an alle Spieler verteilt.</small></p>
+        </main>
+        <footer>
+            <button type="button" class="secondary" onclick="closeDialog('confirm-start-game-dialog')">Abbrechen</button>
+            <button type="button" class="primary" onclick="executeStartGame()">Spiel starten</button>
+        </footer>
+    </article>
+</dialog>
+
+<dialog id="confirm-end-game-dialog">
+    <article>
+        <header>
+            <a href="#" aria-label="Close" rel="prev" onclick="closeDialog('confirm-end-game-dialog')"></a>
+            <p><strong>Spiel beenden</strong></p>
+        </header>
+        <main>
+            <p>Sind Sie sicher, dass Sie das Spiel beenden möchten?</p>
+            <p><small><strong>Achtung:</strong> Das Spiel wird permanent beendet und kann nicht fortgesetzt werden.</small></p>
+        </main>
+        <footer>
+            <button type="button" class="secondary" onclick="closeDialog('confirm-end-game-dialog')">Abbrechen</button>
+            <button type="button" class="contrast" onclick="executeEndGame()">Spiel beenden</button>
+        </footer>
+    </article>
+</dialog>
+
+<dialog id="confirm-delete-player-dialog">
+    <article>
+        <header>
+            <a href="#" aria-label="Close" rel="prev" onclick="closeDialog('confirm-delete-player-dialog')"></a>
+            <p><strong>Spieler löschen</strong></p>
+        </header>
+        <main>
+            <p>Sind Sie sicher, dass Sie den Spieler <strong id="delete-player-name"></strong> löschen möchten?</p>
+            <p><small><strong>Achtung:</strong> Der Spieler wird permanent gelöscht und alle seine Daten gehen verloren.</small></p>
+        </main>
+        <footer>
+            <button type="button" class="secondary" onclick="closeDialog('confirm-delete-player-dialog')">Abbrechen</button>
+            <button type="button" class="contrast" onclick="executeDeletePlayer()">Spieler löschen</button>
+        </footer>
+    </article>
+</dialog>
+
+<dialog id="confirm-delete-circle-dialog">
+    <article>
+        <header>
+            <a href="#" aria-label="Close" rel="prev" onclick="closeDialog('confirm-delete-circle-dialog')"></a>
+            <p><strong>Kreis löschen</strong></p>
+        </header>
+        <main>
+            <p>Sind Sie sicher, dass Sie den Kreis <strong id="delete-circle-name"></strong> löschen möchten?</p>
+            <p><small><strong>Achtung:</strong> Der Kreis wird permanent gelöscht.</small></p>
+        </main>
+        <footer>
+            <button type="button" class="secondary" onclick="closeDialog('confirm-delete-circle-dialog')">Abbrechen</button>
+            <button type="button" class="contrast" onclick="executeDeleteCircle()">Kreis löschen</button>
         </footer>
     </article>
 </dialog>
@@ -548,6 +617,86 @@ document.getElementById('resend-modal').addEventListener('click', function(event
     if (event.target === this) {
         closeResendModal();
     }
+});
+
+// Confirmation functions for destructive operations
+let pendingPlayerName = '';
+let pendingCircleName = '';
+
+function confirmStartGame() {
+    document.getElementById('confirm-start-game-dialog').showModal();
+}
+
+function confirmEndGame() {
+    document.getElementById('confirm-end-game-dialog').showModal();
+}
+
+function confirmDeletePlayer(playerName) {
+    pendingPlayerName = playerName;
+    document.getElementById('delete-player-name').textContent = playerName;
+    document.getElementById('confirm-delete-player-dialog').showModal();
+}
+
+function confirmDeleteCircle(circleName) {
+    pendingCircleName = circleName;
+    document.getElementById('delete-circle-name').textContent = circleName;
+    document.getElementById('confirm-delete-circle-dialog').showModal();
+}
+
+function executeStartGame() {
+    submitAction('start-game');
+    closeDialog('confirm-start-game-dialog');
+}
+
+function executeEndGame() {
+    submitAction('end-game');
+    closeDialog('confirm-end-game-dialog');
+}
+
+function executeDeletePlayer() {
+    submitAction('delete-player', 'player', pendingPlayerName);
+    closeDialog('confirm-delete-player-dialog');
+}
+
+function executeDeleteCircle() {
+    submitAction('delete-circle', 'circle', pendingCircleName);
+    closeDialog('confirm-delete-circle-dialog');
+}
+
+function submitAction(action, paramName = null, paramValue = null) {
+    const form = document.createElement('form');
+    form.method = 'post';
+    form.style.display = 'none';
+    
+    const actionInput = document.createElement('input');
+    actionInput.type = 'hidden';
+    actionInput.name = 'action';
+    actionInput.value = action;
+    form.appendChild(actionInput);
+    
+    if (paramName && paramValue) {
+        const paramInput = document.createElement('input');
+        paramInput.type = 'hidden';
+        paramInput.name = paramName;
+        paramInput.value = paramValue;
+        form.appendChild(paramInput);
+    }
+    
+    document.body.appendChild(form);
+    form.submit();
+}
+
+function closeDialog(dialogId) {
+    document.getElementById(dialogId).close();
+}
+
+// Close confirmation dialogs when clicking outside
+document.querySelectorAll('dialog').forEach(dialog => {
+    dialog.addEventListener('click', function(event) {
+        if (event.target === this) {
+            this.close();
+        }
+    });
 });
 </script>
 {% endblock %}

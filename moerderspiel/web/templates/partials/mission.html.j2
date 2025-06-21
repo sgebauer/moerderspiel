@@ -1,6 +1,6 @@
 <article class="mission-card">
     <header class="players">
-        <span class="killer">{{ mission.killer.name }}</span>
+        <span class="killer">{{ mission.killer.name if mission.killer else 'Gekickt' }}</span>
         <span></span>
         <span class="victim">{{ mission.victim.name }}</span>
     </header>

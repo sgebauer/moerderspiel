@@ -29,6 +29,18 @@ class ChangeGamemasterPasswordForm(Form):
                                    description="Bestätigen Sie das neue Passwort.")
 
 
+class UpdatePlayerEmailForm(Form):
+    form_id = "update-player-email"
+
+    email = StringField('E-Mail-Adresse',
+                       [validators.optional(), validators.Email(check_deliverability=True)],
+                       filters=[lambda s: s if s is None else str.strip(s)],
+                       description="""
+                       Ihre E-Mail-Adresse für Spielbenachrichtigungen.
+                       Lassen Sie das Feld leer, um keine E-Mails zu erhalten.
+                       """)
+
+
 class AddPlayerForm(Form):
     form_id = "add-player"
 

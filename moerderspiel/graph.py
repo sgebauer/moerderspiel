@@ -36,12 +36,8 @@ def generate_circles_graph(circles: List[Circle], show_original_owners: bool = F
             if show_original_owners:
                 dot.edge(mission.initial_owner.name, mission.victim.name, style="dashed", color=color)
 
-            if mission.completed:
-                if not mission.killer:
-                    dot.node('Game Master', color='#aaaaaa', fontcolor='#aaaaaa')
-                    killer = 'Game Master'
-                else:
-                    killer = mission.killer.name
+            if mission.completed and mission.killer:
+                killer = mission.killer.name
 
                 dot.edge(killer, mission.victim.name, color=color,
                          label=f"{mission.completion_reason}\n({mission.completion_date.strftime('%Y-%m-%d %H:%M')})")

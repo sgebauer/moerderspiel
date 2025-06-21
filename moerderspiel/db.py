@@ -419,22 +419,33 @@ class Mission(Base):
         return list(v.get_next_uncompleted() for v in cls.achievable_missions_by_victim(player))
 
     @classmethod
-    def completed_missions_in_circle(cls, circle: Circle) -> List['Mission']:
-        return list(circle._query(select(cls).where(cls.circle == circle).where(cls.completion_date != None)).all())
+    def completed_missions_in_circle(cls, circle: Circle, exclude_kicks: bool = True) -> List['Mission']:
+        query = select(cls).where(cls.circle == circle).where(cls.completion_date != None)
+        if exclude_kicks:
+            query = query.where(cls.killer_id != None)
+        return list(circle._query(query).all())
 
     @classmethod
-    def completed_missions_in_game(cls, game: Game) -> List['Mission']:
-        return list(game._query(select(cls).where(cls.circle.has(Circle.game == game)).where(cls.completion_date != None)).all())
+    def completed_missions_in_game(cls, game: Game, exclude_kicks: bool = True) -> List['Mission']:
+        query = select(cls).where(cls.circle.has(Circle.game == game)).where(cls.completion_date != None)
+        if exclude_kicks:
+            query = query.where(cls.killer_id != None)
+        return list(game._query(query).all())
 
     @classmethod
-    def completed_missions_in_game_by_owner(cls, game: Game, owner: Player) -> List['Mission']:
-        ret = list(game._query(select(cls).where(cls.circle.has(Circle.game == game)).where(cls.completion_date != None)).all())
+    def completed_missions_in_game_by_owner(cls, game: Game, owner: Player, exclude_kicks: bool = True) -> List['Mission']:
+        query = select(cls).where(cls.circle.has(Circle.game == game)).where(cls.completion_date != None)
+        if exclude_kicks:
+            query = query.where(cls.killer_id != None)
+        ret = list(game._query(query).all())
         return [mission for mission in ret if mission.current_owner == owner ]
 
     @classmethod
-    def completed_missions_in_game_by_circle(cls, game: Game, circle: Circle) -> List['Mission']:
-        return list(game._query(
-            select(cls).where(cls.circle.has(Circle.game == game)).where(cls.completion_date != None).where(Mission.circle == circle)).all())
+    def completed_missions_in_game_by_circle(cls, game: Game, circle: Circle, exclude_kicks: bool = True) -> List['Mission']:
+        query = select(cls).where(cls.circle.has(Circle.game == game)).where(cls.completion_date != None).where(Mission.circle == circle)
+        if exclude_kicks:
+            query = query.where(cls.killer_id != None)
+        return list(game._query(query).all())
 
 
     @classmethod

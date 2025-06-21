@@ -118,6 +118,30 @@
         </article>
     {% endif %}
 
+    <!-- Email Settings Section -->
+    <article>
+        <header>
+            <h3>E-Mail-Einstellungen
+                {% if is_gamemaster_view is defined and is_gamemaster_view %}
+                <small>(Gamemaster-Ansicht)</small>
+                {% endif %}
+            </h3>
+        </header>
+        {% if is_gamemaster_view is defined and is_gamemaster_view %}
+        <p><strong>Hinweis:</strong> Als Gamemaster können Sie die E-Mail-Adresse des Spielers verwalten.</p>
+        {% else %}
+        <p>Verwalten Sie Ihre E-Mail-Adresse für Spielbenachrichtigungen.</p>
+        {% endif %}
+        <form method="post">
+            <fieldset>
+                {{ render_field(email_form.email) }}
+            </fieldset>
+            <footer>
+                <button type="submit" name="form" value="{{ email_form.form_id }}">E-Mail-Adresse aktualisieren</button>
+            </footer>
+        </form>
+    </article>
+
 <!-- Modal for resend confirmation -->
 <dialog id="player-resend-modal">
     <article>
