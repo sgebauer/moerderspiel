@@ -195,6 +195,30 @@ class GameService:
         for p in players_to_notify:
             self.send_mission_update(p)
 
+    def get_kick_preview(self, player: str | Player):
+        """Get information about what happens when a player is kicked, without actually kicking them"""
+        player = self.get_player(player)
+        kick_info = {
+            'kicked_player': player.name,
+            'mission_transfers': []
+        }
+
+        for mission in Mission.achievable_missions_by_victim(player):
+            current_owner = mission.current_owner
+            # Find what mission the current owner will get next
+            next_mission = mission.get_next_uncompleted()
+
+            transfer_info = {
+                'circle_name': mission.circle.name,
+                'circle_set': mission.circle.set,
+                'current_owner': current_owner.name,
+                'mission_code': mission.code,
+                'next_target': next_mission.victim.name if next_mission and next_mission != mission else 'Kreis beendet'
+            }
+            kick_info['mission_transfers'].append(transfer_info)
+
+        return kick_info
+
     def get_current_missions(self, owner: str | Player):
         owner = self.get_player(owner)
         return sorted(Mission.achievable_missions_by_current_owner(owner), key=lambda m: m.circle_id)

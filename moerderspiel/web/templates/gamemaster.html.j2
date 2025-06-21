@@ -58,11 +58,17 @@
                                {{ '' if player.alive else 'disabled' }}>
                                 {{ icon("file-document-outline") }}
                             </a>
-                            <button class="primary" name="action" value="resend-player-missions" title="Aufträge neu versenden"
+                            <button type="button" class="primary" onclick="showResendConfirmation('{{ player.name }}', '{{ game.id }}')" title="Aufträge neu versenden"
                                     {{ '' if player.alive and player.notifiable else 'disabled' }}>
                                 {{ icon("email-sync-outline") }}
                             </button>
-                            <button class="contrast" name="action" value="kick-player" title="Spieler kicken"
+                            <button type="button" class="secondary" onclick="showTargetJobs('{{ player.name }}', '{{ game.id }}')" title="Potentielle Mörder anzeigen - Wer versucht diesen Spieler zu töten?">
+                                {{ icon("crosshairs-gps") }}
+                            </button>
+                            <a role="button" class="secondary" href="{{ url_for('gamemaster_player_view', game_id=game.id, player_name=player.name) }}" title="Spielerseite anzeigen">
+                                {{ icon("account-outline") }}
+                            </a>
+                            <button type="button" class="contrast" onclick="showKickModal('{{ player.name }}', '{{ game.id }}')" title="Spieler kicken"
                                     {{ '' if player.alive else 'disabled' }}>
                                 {{ icon("account-cancel-outline") }}
                             </button>
@@ -171,4 +177,370 @@
     {% endwith %}
 </main>
 {% endcall %}
+
+<!-- Modal for showing player target jobs -->
+<dialog id="player-jobs-modal">
+    <article>
+        <header>
+            <a href="#" aria-label="Close" rel="prev" onclick="closeTargetJobsModal()"></a>
+            <p><strong id="modal-title">Aufträge auf Spieler</strong></p>
+        </header>
+        <main id="modal-content">
+            <p>Lade Daten...</p>
+        </main>
+    </article>
+</dialog>
+
+<!-- Modal for kick confirmation -->
+<dialog id="kick-modal">
+    <article>
+        <header>
+            <a href="#" aria-label="Close" rel="prev" onclick="closeKickModal()"></a>
+            <p><strong id="kick-modal-title">Spieler kicken</strong></p>
+        </header>
+        <main id="kick-modal-content">
+            <p>Lade Daten...</p>
+        </main>
+        <footer>
+            <button type="button" class="secondary" onclick="closeKickModal()">Abbrechen</button>
+            <button type="button" class="contrast" id="confirm-kick-btn" onclick="confirmKick()">Spieler kicken</button>
+        </footer>
+    </article>
+</dialog>
+
+<!-- Modal for resend confirmation -->
+<dialog id="resend-modal">
+    <article>
+        <header>
+            <a href="#" aria-label="Close" rel="prev" onclick="closeResendModal()"></a>
+            <p><strong id="resend-modal-title">Aufträge neu versenden</strong></p>
+        </header>
+        <main id="resend-modal-content">
+            <p>Möchten Sie die Aufträge wirklich neu an <strong id="resend-player-name"></strong> versenden?</p>
+            <p><small>Eine E-Mail mit den aktuellen Aufträgen wird an den Spieler gesendet.</small></p>
+        </main>
+        <footer>
+            <button type="button" class="secondary" onclick="closeResendModal()">Abbrechen</button>
+            <button type="button" class="primary" id="confirm-resend-btn" onclick="confirmResend()">Aufträge versenden</button>
+        </footer>
+    </article>
+</dialog>
+
+<script>
+function showTargetJobs(playerName, gameId) {
+    const modal = document.getElementById('player-jobs-modal');
+    const modalTitle = document.getElementById('modal-title');
+    const modalContent = document.getElementById('modal-content');
+    
+    modalTitle.textContent = `Aufträge auf ${playerName}`;
+    modalContent.innerHTML = '<p>Lade Daten...</p>';
+    
+    // Show modal
+    modal.showModal();
+    
+    // Fetch target jobs data
+    fetch(`/gamemaster/${gameId}/player/${encodeURIComponent(playerName)}/target_jobs`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Fehler beim Laden der Daten');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.error) {
+                modalContent.innerHTML = `<p style="color: red;">Fehler: ${data.error}</p>`;
+                return;
+            }
+            
+            if (data.length === 0) {
+                modalContent.innerHTML = '<p>Dieser Spieler ist in keinem Kreis eingetragen oder ist das Ziel keiner Aufträge.</p>';
+                return;
+            }
+            
+            // Build table
+            let html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Kreis</th>
+                            <th>Kreis-Set</th>
+                            <th>Status</th>
+                            <th>Auftragscode</th>
+                            <th>Aktueller Jäger</th>
+                            <th>Erledigt von</th>
+                            <th>Wann</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            data.forEach(job => {
+                let status;
+                if (job.completed) {
+                    if (job.killer_name === "Gekickt/Admin") {
+                        status = '<span style="color: orange;">Gekickt</span>';
+                    } else {
+                        status = '<span style="color: red;">Erledigt</span>';
+                    }
+                } else {
+                    status = '<span style="color: green;">Offen</span>';
+                }
+                
+                const completedAt = job.completed_at ? 
+                    new Date(job.completed_at).toLocaleString('de-DE') : '';
+                const circleSet = job.circle_set ? ` (${job.circle_set})` : '';
+                
+                html += `
+                    <tr>
+                        <td>${job.circle_name}${circleSet}</td>
+                        <td>${job.circle_set || '-'}</td>
+                        <td>${status}</td>
+                        <td>${job.mission_code || '-'}</td>
+                        <td>${job.current_owner || '-'}</td>
+                        <td>${job.killer_name || '-'}</td>
+                        <td>${completedAt}</td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table>';
+            modalContent.innerHTML = html;
+        })
+        .catch(error => {
+            modalContent.innerHTML = `<p style="color: red;">Fehler beim Laden der Daten: ${error.message}</p>`;
+        });
+}
+
+function closeTargetJobsModal() {
+    const modal = document.getElementById('player-jobs-modal');
+    modal.close();
+}
+
+// Close modal when clicking outside
+document.getElementById('player-jobs-modal').addEventListener('click', function(event) {
+    if (event.target === this) {
+        closeTargetJobsModal();
+    }
+});
+
+// Kick modal functions
+let pendingKickData = null;
+let currentKickData = null;
+
+function showKickModal(playerName, gameId) {
+    const modal = document.getElementById('kick-modal');
+    const modalTitle = document.getElementById('kick-modal-title');
+    const modalContent = document.getElementById('kick-modal-content');
+    
+    modalTitle.textContent = `Spieler ${playerName} kicken`;
+    modalContent.innerHTML = '<p>Lade Auftragstransfers...</p>';
+    
+    // Show modal
+    modal.showModal();
+    
+    // Fetch kick preview data
+    fetch(`/gamemaster/${gameId}/player/${encodeURIComponent(playerName)}/kick_preview`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Fehler beim Laden der Daten');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.error) {
+                modalContent.innerHTML = `<p style="color: red;">Fehler: ${data.error}</p>`;
+                return;
+            }
+            
+            pendingKickData = { playerName, gameId };
+            currentKickData = data;
+            
+            let html = `
+                <p><strong>Wenn Sie ${playerName} kicken, werden folgende Aufträge übertragen:</strong></p>
+            `;
+            
+            if (data.mission_transfers.length === 0) {
+                html += '<p>Dieser Spieler hat keine offenen Aufträge, die übertragen werden müssen.</p>';
+            } else {
+                html += `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Kreis</th>
+                                <th>Kreis-Set</th>
+                                <th>Neuer Jäger</th>
+                                <th>Neues Ziel</th>
+                                <th>Auftragscode</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                
+                data.mission_transfers.forEach(transfer => {
+                    const circleSet = transfer.circle_set ? ` (${transfer.circle_set})` : '';
+                    html += `
+                        <tr>
+                            <td>${transfer.circle_name}${circleSet}</td>
+                            <td>${transfer.circle_set || '-'}</td>
+                            <td><strong>${transfer.current_owner}</strong></td>
+                            <td>${transfer.next_target}</td>
+                            <td><code>${transfer.mission_code}</code></td>
+                        </tr>
+                    `;
+                });
+                
+                html += '</tbody></table>';
+                html += '<p><em>Diese Spieler werden automatisch über ihre neuen Aufträge benachrichtigt.</em></p>';
+                html += '<button type="button" class="secondary" onclick="copyMissionTransfersAsMarkdown()">Als Markdown kopieren</button>';
+            }
+            
+            modalContent.innerHTML = html;
+        })
+        .catch(error => {
+            modalContent.innerHTML = `<p style="color: red;">Fehler beim Laden der Daten: ${error.message}</p>`;
+        });
+}
+
+function closeKickModal() {
+    const modal = document.getElementById('kick-modal');
+    modal.close();
+    pendingKickData = null;
+    currentKickData = null;
+}
+
+function confirmKick() {
+    if (!pendingKickData) {
+        return;
+    }
+    
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.style.display = 'none';
+    
+    const playerInput = document.createElement('input');
+    playerInput.type = 'hidden';
+    playerInput.name = 'player';
+    playerInput.value = pendingKickData.playerName;
+    
+    const actionInput = document.createElement('input');
+    actionInput.type = 'hidden';
+    actionInput.name = 'action';
+    actionInput.value = 'confirm-kick-player';
+    
+    form.appendChild(playerInput);
+    form.appendChild(actionInput);
+    document.body.appendChild(form);
+    form.submit();
+}
+
+function copyMissionTransfersAsMarkdown() {
+    if (!pendingKickData || !currentKickData) {
+        alert('Keine Daten zum Kopieren verfügbar.');
+        return;
+    }
+    
+    const playerName = pendingKickData.playerName;
+    const transfers = currentKickData.mission_transfers;
+    
+    let markdown = `# Auftragstransfers nach Kick von ${playerName}\n\n`;
+    
+    if (transfers.length === 0) {
+        markdown += 'Keine Auftragstransfers erforderlich.\n';
+    } else {
+        markdown += '| Kreis | Kreis-Set | Neuer Jäger | Neues Ziel | Auftragscode |\n';
+        markdown += '|-------|-----------|-------------|------------|--------------|\n';
+        
+        transfers.forEach(transfer => {
+            const circleSet = transfer.circle_set || '-';
+            markdown += `| ${transfer.circle_name} | ${circleSet} | **${transfer.current_owner}** | ${transfer.next_target} | \`${transfer.mission_code}\` |\n`;
+        });
+        
+        markdown += '\n_Diese Spieler wurden automatisch über ihre neuen Aufträge benachrichtigt._\n';
+    }
+    
+    // Copy to clipboard
+    navigator.clipboard.writeText(markdown).then(() => {
+        // Show temporary feedback
+        const button = event.target;
+        const originalText = button.textContent;
+        button.textContent = 'Kopiert!';
+        button.style.backgroundColor = '#28a745';
+        
+        setTimeout(() => {
+            button.textContent = originalText;
+            button.style.backgroundColor = '';
+        }, 2000);
+    }).catch(err => {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = markdown;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        
+        // Show feedback
+        alert('Markdown in Zwischenablage kopiert!');
+    });
+}
+
+// Close kick modal when clicking outside
+document.getElementById('kick-modal').addEventListener('click', function(event) {
+    if (event.target === this) {
+        closeKickModal();
+    }
+});
+
+// Resend confirmation modal functions
+let pendingResendData = null;
+
+function showResendConfirmation(playerName, gameId) {
+    const modal = document.getElementById('resend-modal');
+    const playerNameElement = document.getElementById('resend-player-name');
+    
+    playerNameElement.textContent = playerName;
+    pendingResendData = { playerName, gameId };
+    
+    modal.showModal();
+}
+
+function closeResendModal() {
+    const modal = document.getElementById('resend-modal');
+    modal.close();
+    pendingResendData = null;
+}
+
+function confirmResend() {
+    if (!pendingResendData) return;
+    
+    // Create and submit form
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.style.display = 'none';
+    
+    const playerInput = document.createElement('input');
+    playerInput.type = 'hidden';
+    playerInput.name = 'player';
+    playerInput.value = pendingResendData.playerName;
+    
+    const actionInput = document.createElement('input');
+    actionInput.type = 'hidden';
+    actionInput.name = 'action';
+    actionInput.value = 'resend-player-missions';
+    
+    form.appendChild(playerInput);
+    form.appendChild(actionInput);
+    document.body.appendChild(form);
+    form.submit();
+    
+    closeResendModal();
+}
+
+// Close resend modal when clicking outside
+document.getElementById('resend-modal').addEventListener('click', function(event) {
+    if (event.target === this) {
+        closeResendModal();
+    }
+});
+</script>
 {% endblock %}

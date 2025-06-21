@@ -16,7 +16,7 @@ push: ._container_push.cid ## Push the container to the registry
 	@echo "Container pushed to ghcr.io/tionis/moerderspiel:latest"
 
 deploy: ._container_push.cid ## Build, Push and Deploy the container
-	ssh root@makoma.bitmap-ev.org -- bash -c 'podman pull ghcr.io/tionis/moerderspiel:latest && systemctl stop moerderspiel && rm /run/moerderspiel.cid && systemctl start moerderspiel && echo "New Version was deployed"'
+	ssh root@makoma.bitmap-ev.org 'podman pull ghcr.io/tionis/moerderspiel:latest && systemctl stop moerderspiel && rm /run/moerderspiel.cid && systemctl start moerderspiel && echo "New Version was deployed"'
 
 dev: ._container.cid ## Start the container in development mode
 	mkdir -p ._cache ._data
