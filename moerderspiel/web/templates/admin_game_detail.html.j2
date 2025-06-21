@@ -193,7 +193,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for mission in completed_missions[:20] %}
+                    {% for mission in completed_missions %}
                     <tr>
                         <td>#{{ mission.position }}</td>
                         <td>{{ mission.killer.name if mission.killer else "System" }}</td>
@@ -205,9 +205,6 @@
                 </tbody>
             </table>
         </div>
-        {% if completed_missions|length > 20 %}
-        <small><em>Nur die ersten 20 Missionen werden angezeigt.</em></small>
-        {% endif %}
         {% else %}
         <p><em>Keine abgeschlossenen Missionen.</em></p>
         {% endif %}
