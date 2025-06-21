@@ -98,3 +98,19 @@ h1 a:focus {
     --pico-color: inherit;
     --pico-text-decoration: inherit;
 }
+
+/* Player Status Pie Chart */
+#playerStatusChart {
+    max-width: 300px;
+    max-height: 300px;
+    margin: 0 auto;
+}
+
+.chart-container {
+    position: relative;
+    height: 300px;
+    margin-top: 1rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}

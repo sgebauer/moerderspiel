@@ -1,5 +1,9 @@
 {% extends "_base.html.j2" %}
 
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
 {% block header %}
 <nav>
     <ul>
@@ -76,18 +80,28 @@
             <header>
                 <h3>Statistiken</h3>
             </header>
-            <ul>
-                <li><strong>Abgeschlossene Missionen:</strong> {{ completed_missions|length }}</li>
-                <li><strong>Massenmörder:</strong> {{ mass_murderers|length }}</li>
-                {% if game.started %}
-                <li><strong>Spielstatus:</strong> 
-                    {% if game.state.name == 'ended' %}Beendet{% else %}Läuft{% endif %}
-                </li>
-                {% else %}
-                <li><strong>Spielstatus:</strong> Nicht gestartet</li>
-                {% endif %}
-                <li><strong>Lebende Spieler:</strong> {{ game.players|selectattr('alive')|list|length }}</li>
-            </ul>
+            
+            <div class="grid">
+                <div>
+                    <ul>
+                        <li><strong>Abgeschlossene Missionen:</strong> {{ completed_missions|length }}</li>
+                        <li><strong>Massenmörder:</strong> {{ mass_murderers|length }}</li>
+                        {% if game.started %}
+                        <li><strong>Spielstatus:</strong> 
+                            {% if game.state.name == 'ended' %}Beendet{% else %}Läuft{% endif %}
+                        </li>
+                        {% else %}
+                        <li><strong>Spielstatus:</strong> Nicht gestartet</li>
+                        {% endif %}
+                        <li><strong>Lebende Spieler:</strong> {{ game.players|selectattr('alive')|list|length }}</li>
+                        <li><strong>Tote Spieler:</strong> {{ game.players|rejectattr('alive')|list|length }}</li>
+                    </ul>
+                </div>
+                
+                <div class="chart-container">
+                    <canvas id="playerStatusChart" width="300" height="300"></canvas>
+                </div>
+            </div>
         </article>
     </div>
     
@@ -298,5 +312,77 @@ function showChangePasswordDialog(gameId) {
 function closeDialog(dialogId) {
     document.getElementById(dialogId).close();
 }
+
+// Initialize Player Status Pie Chart
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('playerStatusChart').getContext('2d');
+    
+    // Calculate player statistics
+    const alivePlayers = {{ game.players|selectattr('alive')|list|length }};
+    const deadPlayers = {{ game.players|rejectattr('alive')|list|length }};
+    
+    // Only create chart if there are players
+    if (alivePlayers > 0 || deadPlayers > 0) {
+        // Create pie chart data
+        const chartData = {
+            labels: ['Lebende Spieler', 'Tote Spieler'],
+            datasets: [{
+                data: [alivePlayers, deadPlayers],
+                backgroundColor: [
+                    'rgba(75, 192, 192, 0.8)',
+                    'rgba(255, 99, 132, 0.8)'
+                ],
+                borderColor: [
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(255, 99, 132, 1)'
+                ],
+                borderWidth: 2
+            }]
+        };
+        
+        // Create pie chart
+        const playerStatusChart = new Chart(ctx, {
+            type: 'pie',
+            data: chartData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Spielerstatus',
+                        font: {
+                            size: 16
+                        }
+                    },
+                    legend: {
+                        display: true,
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            usePointStyle: true
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed;
+                                const total = alivePlayers + deadPlayers;
+                                const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                                return `${label}: ${value} (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    } else {
+        // Display message if no players
+        ctx.canvas.style.display = 'none';
+        const container = ctx.canvas.parentElement;
+        container.innerHTML = '<p style="text-align: center; color: #666; font-style: italic;">Keine Spieler registriert</p>';
+    }
+});
 </script>
 {% endblock %}
