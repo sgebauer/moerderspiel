@@ -211,6 +211,11 @@ class Circle(Base):
     missions: Mapped[List["Mission"]] = relationship(back_populates="circle", order_by="Mission.position",
                                                      collection_class=ordering_list("position"), cascade="delete")
 
+    @property
+    def players(self) -> List["Player"]:
+        """Return all players in this circle (victims of missions in this circle)."""
+        return [mission.victim for mission in self.missions]
+
     @classmethod
     def by_game_and_name(cls, game: Game, name: str) -> 'Circle':
         return game._query(select(cls).where(cls.game == game).where(cls.name == name)).one_or_none()
