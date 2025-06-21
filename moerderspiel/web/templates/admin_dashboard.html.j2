@@ -165,9 +165,9 @@ function confirmDeleteGame(gameId, gameTitle) {
     dialogContent.innerHTML = `
         Sind Sie sicher, dass Sie das Spiel <strong>"${gameTitle}"</strong> (ID: ${gameId}) löschen möchten?<br>
         <strong>Diese Aktion kann nicht rückgängig gemacht werden!</strong><br><br>
-        Geben Sie zur Bestätigung <strong>DELETE</strong> ein:
+        Geben Sie zur Bestätigung die Spiel-ID <strong>${gameId}</strong> ein:
         <form method="post" action="/admin/game/${gameId}/delete" style="margin-top: 1rem;">
-            <input type="text" name="confirm" placeholder="DELETE" required autocomplete="off" style="margin-bottom: 1rem;">
+            <input type="text" name="confirm" placeholder="${gameId}" required autocomplete="off" style="margin-bottom: 1rem;">
             <div style="display: flex; gap: 0.5rem;">
                 <button type="submit" class="contrast">Spiel löschen</button>
                 <button type="button" onclick="closeDialog('delete-game-dialog')" class="secondary">Abbrechen</button>

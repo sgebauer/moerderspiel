@@ -600,8 +600,8 @@ def admin_logout():
 @needs_admin_authentication
 def admin_delete_game(game_id: str):
     """Delete a game - requires confirmation"""
-    if request.form.get('confirm') != 'DELETE':
-        flash('Spiel-Löschung erfordert Bestätigung', 'error')
+    if request.form.get('confirm') != game_id:
+        flash('Spiel-Löschung erfordert korrekte ID-Eingabe', 'error')
         return redirect(url_for('admin_dashboard'))
     
     try:
