@@ -51,7 +51,9 @@ def with_player_service(f):
 def needs_gamemaster_authentication(f):
     @wraps(f)
     def decorated_function(service: GameService, **kwargs):
-        if service.game.id in (session.get('gamemaster_authenticated') or []):
+        # Allow access if user is authenticated as gamemaster for this game OR as admin
+        if (service.game.id in (session.get('gamemaster_authenticated') or []) or 
+            (config.ADMIN_ENABLED and session.get('admin_authenticated'))):
             return f(service=service, **kwargs)
         else:
             return redirect(url_for('game', game_id=service.game.id, _anchor=GameMasterLoginForm.form_id))
@@ -256,7 +258,9 @@ def gamemaster(service: GameService):
     return render_template('gamemaster.html.j2',
                            game=service.game,
                            completed_missions=Mission.completed_missions_in_game(service.game),
-                           add_circle_form=add_circle_form)
+                           add_circle_form=add_circle_form,
+                           is_admin_access=(config.ADMIN_ENABLED and session.get('admin_authenticated') and 
+                                          service.game.id not in (session.get('gamemaster_authenticated') or [])))
 
 
 @app.route('/player/<player_id>', methods=['GET', 'POST'])

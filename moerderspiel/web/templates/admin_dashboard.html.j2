@@ -70,6 +70,13 @@
                                     Spiel öffnen
                                 </a>
                                 
+                                <a href="{{ url_for('gamemaster', game_id=game.id) }}" 
+                                   role="button" 
+                                   class="outline" 
+                                   style="font-size: 0.8rem; padding: 0.25rem 0.5rem;">
+                                    {{ icon('account-outline') }} Gamemaster
+                                </a>
+                                
                                 <button onclick="showChangePasswordDialog('{{ game.id }}')" 
                                         class="outline" 
                                         style="font-size: 0.8rem; padding: 0.25rem 0.5rem;">

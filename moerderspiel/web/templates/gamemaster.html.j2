@@ -4,6 +4,9 @@
 <article>
     <header>
         <h1>Gamemaster-Bereich: {{ game.title }}</h1>
+        {% if is_admin_access %}
+        <p><em style="color: orange;">⚠️ Sie sind als Administrator angemeldet und haben vollen Zugriff auf dieses Spiel.</em></p>
+        {% endif %}
     </header>
     <main>
         {% include "partials/gameinfo.html.j2" %}
@@ -22,6 +25,10 @@
             <a role="button" class="secondary" href="/game/{{ game.id }}" target="_blank">Zur Spiel-Seite</a>
             
             <a role="button" class="secondary" href="/gamemaster/{{ game.id }}/edit-rules">Spielregeln bearbeiten</a>
+            
+            {% if is_admin_access %}
+            <a role="button" class="outline" href="{{ url_for('admin_dashboard') }}">← Zurück zum Admin-Dashboard</a>
+            {% endif %}
         </form>
     </main>
 </article>
