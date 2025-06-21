@@ -150,6 +150,7 @@ class GameService:
             self.shuffle_circle(circle)
 
         self.game.state = GameState.running
+        self.game.started_at = datetime.now()
 
         for player in self.game.players:
             self.send_mission_update(player)

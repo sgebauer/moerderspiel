@@ -61,6 +61,16 @@ class Game(Base):
     gamemaster_password: Mapped[str]
 
     """
+    When the game was created.
+    """
+    created_at: Mapped[datetime] = mapped_column(default=datetime.now)
+
+    """
+    When the game was started (moved from 'new' to 'running' state).
+    """
+    started_at: Mapped[Optional[datetime]]
+
+    """
     The rules of the game in Markdown format.
     """
     rules: Mapped[Optional[str]] = mapped_column(String(constants.MAX_RULES_LENGTH), default="Noch kein Regeltext hinzugefügt.")

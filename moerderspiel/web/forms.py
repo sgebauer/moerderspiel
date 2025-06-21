@@ -9,6 +9,26 @@ from moerderspiel import constants
 from moerderspiel.db import Game
 
 
+class AdminLoginForm(Form):
+    form_id = "admin-login"
+
+    password = PasswordField('Admin-Passwort',
+                             [validators.DataRequired()],
+                             id=form_id,
+                             description="Geben Sie das Admin-Passwort ein, um auf die Verwaltungsseite zuzugreifen.")
+
+
+class ChangeGamemasterPasswordForm(Form):
+    form_id = "change-gamemaster-password"
+
+    new_password = PasswordField('Neues Gamemaster-Passwort',
+                                [validators.DataRequired(), validators.Length(min=6)],
+                                description="Das neue Passwort für den Gamemaster dieses Spiels.")
+    confirm_password = PasswordField('Passwort bestätigen',
+                                   [validators.DataRequired(), validators.EqualTo('new_password', message='Passwörter müssen übereinstimmen')],
+                                   description="Bestätigen Sie das neue Passwort.")
+
+
 class AddPlayerForm(Form):
     form_id = "add-player"
 

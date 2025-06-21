@@ -1,0 +1,227 @@
+{% extends "_base.html.j2" %}
+
+{% block header %}
+<nav>
+    <ul>
+        <li><strong><a href="/">Das Mörderspiel</a> - Admin-Dashboard</strong></li>
+    </ul>
+    <ul>
+        <li><a href="{{ url_for('admin_logout') }}">Abmelden</a></li>
+    </ul>
+</nav>
+{% endblock %}
+
+{% block main %}
+<section id="admin-dashboard">
+    <h2>Admin-Dashboard</h2>
+    <p>Willkommen im Admin-Bereich. Hier können Sie alle Spiele verwalten.</p>
+    
+    <article>
+        <header>
+            <h3>Spiele-Übersicht</h3>
+        </header>
+        
+        {% if games %}
+        <div class="overflow-auto">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Spiel-ID</th>
+                        <th>Titel</th>
+                        <th>Status</th>
+                        <th>Spieler</th>
+                        <th>Kreise</th>
+                        <th>Erstellt</th>
+                        <th>Gestartet</th>
+                        <th>Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for game in games %}
+                    <tr>
+                        <td><code>{{ game.id }}</code></td>
+                        <td>{{ game.title }}</td>
+                        <td>
+                            {% if game.state.name == 'new' %}
+                                <span style="color: orange;">Neu</span>
+                            {% elif game.state.name == 'running' %}
+                                <span style="color: green;">Läuft</span>
+                            {% elif game.state.name == 'ended' %}
+                                <span style="color: red;">Beendet</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ game.players|length }}</td>
+                        <td>{{ game.circles|length }}</td>
+                        <td>{{ game.created_at.strftime('%d.%m.%Y %H:%M') if game.created_at else "Unbekannt" }}</td>
+                        <td>{{ game.started_at.strftime('%d.%m.%Y %H:%M') if game.started_at else "Nicht gestartet" }}</td>
+                        <td>
+                            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                                <a href="{{ url_for('admin_view_game', game_id=game.id) }}" 
+                                   role="button" 
+                                   class="secondary outline" 
+                                   style="font-size: 0.8rem; padding: 0.25rem 0.5rem;">
+                                    {{ icon('file-document-outline') }} Details
+                                </a>
+                                
+                                <a href="{{ url_for('game', game_id=game.id) }}" 
+                                   role="button" 
+                                   class="secondary outline" 
+                                   style="font-size: 0.8rem; padding: 0.25rem 0.5rem;">
+                                    Spiel öffnen
+                                </a>
+                                
+                                <button onclick="showChangePasswordDialog('{{ game.id }}')" 
+                                        class="outline" 
+                                        style="font-size: 0.8rem; padding: 0.25rem 0.5rem;">
+                                    {{ icon('account-outline') }} Passwort
+                                </button>
+                                
+                                {% if game.state.name == 'running' %}
+                                <button onclick="confirmForceEndGame('{{ game.id }}', '{{ game.title }}')" 
+                                        class="outline" 
+                                        style="font-size: 0.8rem; padding: 0.25rem 0.5rem;">
+                                    Spiel beenden
+                                </button>
+                                {% endif %}
+                                
+                                <button onclick="confirmDeleteGame('{{ game.id }}', '{{ game.title }}')" 
+                                        class="contrast outline" 
+                                        style="font-size: 0.8rem; padding: 0.25rem 0.5rem;">
+                                    {{ icon('trash-can-outline') }} Löschen
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p><em>Keine Spiele vorhanden.</em></p>
+        {% endif %}
+    </article>
+</section>
+{% endblock %}
+
+{% block modals %}
+<!-- Delete Game Confirmation Dialog -->
+<dialog id="delete-game-dialog">
+    <article>
+        <header>
+            <button aria-label="Close" rel="prev" onclick="closeDialog('delete-game-dialog')"></button>
+            <p><strong>Spiel löschen</strong></p>
+        </header>
+        <p>Diese Aktion kann nicht rückgängig gemacht werden!</p>
+    </article>
+</dialog>
+
+<!-- Force End Game Confirmation Dialog -->
+<dialog id="force-end-game-dialog">
+    <article>
+        <header>
+            <button aria-label="Close" rel="prev" onclick="closeDialog('force-end-game-dialog')"></button>
+            <p><strong>Spiel beenden</strong></p>
+        </header>
+        <p>Sind Sie sicher, dass Sie dieses Spiel beenden möchten?</p>
+    </article>
+</dialog>
+
+<!-- Change Gamemaster Password Dialog -->
+<dialog id="change-password-dialog">
+    <article>
+        <header>
+            <button aria-label="Close" rel="prev" onclick="closeDialog('change-password-dialog')"></button>
+            <p><strong>Gamemaster-Passwort ändern</strong></p>
+        </header>
+        <form id="change-password-form" method="post" onsubmit="return validatePasswordChange()">
+            <fieldset>
+                <label for="new_password">Neues Gamemaster-Passwort</label>
+                <input type="password" id="new_password" name="new_password" required minlength="6">
+                
+                <label for="confirm_password">Passwort bestätigen</label>
+                <input type="password" id="confirm_password" name="confirm_password" required>
+                
+                <div id="password-error" style="color: red; display: none; margin-top: 0.5rem;"></div>
+            </fieldset>
+            <footer style="display: flex; gap: 0.5rem;">
+                <button type="submit" name="form" value="change-gamemaster-password">Passwort ändern</button>
+                <button type="button" onclick="closeDialog('change-password-dialog')" class="secondary">Abbrechen</button>
+            </footer>
+        </form>
+    </article>
+</dialog>
+
+<script>
+function confirmDeleteGame(gameId, gameTitle) {
+    const dialog = document.getElementById('delete-game-dialog');
+    const dialogContent = dialog.querySelector('p');
+    dialogContent.innerHTML = `
+        Sind Sie sicher, dass Sie das Spiel <strong>"${gameTitle}"</strong> (ID: ${gameId}) löschen möchten?<br>
+        <strong>Diese Aktion kann nicht rückgängig gemacht werden!</strong><br><br>
+        Geben Sie zur Bestätigung <strong>DELETE</strong> ein:
+        <form method="post" action="/admin/game/${gameId}/delete" style="margin-top: 1rem;">
+            <input type="text" name="confirm" placeholder="DELETE" required autocomplete="off" style="margin-bottom: 1rem;">
+            <div style="display: flex; gap: 0.5rem;">
+                <button type="submit" class="contrast">Spiel löschen</button>
+                <button type="button" onclick="closeDialog('delete-game-dialog')" class="secondary">Abbrechen</button>
+            </div>
+        </form>
+    `;
+    dialog.showModal();
+}
+
+function confirmForceEndGame(gameId, gameTitle) {
+    const dialog = document.getElementById('force-end-game-dialog');
+    const dialogContent = dialog.querySelector('p');
+    dialogContent.innerHTML = `
+        Sind Sie sicher, dass Sie das Spiel <strong>"${gameTitle}"</strong> beenden möchten?<br>
+        Das Spiel wird sofort beendet und kann nicht fortgesetzt werden.
+        <form method="post" action="/admin/game/${gameId}/force-end" style="margin-top: 1rem;">
+            <div style="display: flex; gap: 0.5rem;">
+                <button type="submit" class="contrast">Spiel beenden</button>
+                <button type="button" onclick="closeDialog('force-end-game-dialog')" class="secondary">Abbrechen</button>
+            </div>
+        </form>
+    `;
+    dialog.showModal();
+}
+
+function showChangePasswordDialog(gameId) {
+    const dialog = document.getElementById('change-password-dialog');
+    const form = dialog.querySelector('#change-password-form');
+    form.action = `/admin/game/${gameId}/change-gamemaster-password`;
+    
+    // Clear form fields and error message
+    form.querySelector('#new_password').value = '';
+    form.querySelector('#confirm_password').value = '';
+    document.getElementById('password-error').style.display = 'none';
+    
+    dialog.showModal();
+}
+
+function validatePasswordChange() {
+    const newPassword = document.getElementById('new_password').value;
+    const confirmPassword = document.getElementById('confirm_password').value;
+    const errorDiv = document.getElementById('password-error');
+    
+    if (newPassword.length < 6) {
+        errorDiv.textContent = 'Passwort muss mindestens 6 Zeichen lang sein.';
+        errorDiv.style.display = 'block';
+        return false;
+    }
+    
+    if (newPassword !== confirmPassword) {
+        errorDiv.textContent = 'Passwörter stimmen nicht überein.';
+        errorDiv.style.display = 'block';
+        return false;
+    }
+    
+    errorDiv.style.display = 'none';
+    return true;
+}
+
+function closeDialog(dialogId) {
+    document.getElementById(dialogId).close();
+}
+</script>
+{% endblock %}

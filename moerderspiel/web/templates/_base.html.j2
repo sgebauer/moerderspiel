@@ -30,6 +30,9 @@
     <footer class="container grid">
         <a href="https://github.com/sgebauer/moerderspiel" target="_blank">Quellcode</a>
         <a href="/imprint" target="_blank">Impressum & Datenschutz</a>
+        {% if config.ADMIN_ENABLED %}
+        <a href="{{ url_for('admin_login') }}" style="color: #666;">Admin</a>
+        {% endif %}
     </footer>
 
     <div id="modals">

@@ -1,0 +1,302 @@
+{% extends "_base.html.j2" %}
+
+{% block header %}
+<nav>
+    <ul>
+        <li><strong><a href="/">Das Mörderspiel</a> - Admin: {{ game.title }}</strong></li>
+    </ul>
+    <ul>
+        <li><a href="{{ url_for('admin_dashboard') }}">Zurück zum Dashboard</a></li>
+        <li><a href="{{ url_for('admin_logout') }}">Abmelden</a></li>
+    </ul>
+</nav>
+{% endblock %}
+
+{% block main %}
+<section id="admin-game-detail">
+    <header>
+        <h2>Spiel-Details: {{ game.title }}</h2>
+        <p>Spiel-ID: <code>{{ game.id }}</code></p>
+    </header>
+    
+    <div class="grid">
+        <!-- Game Information -->
+        <article>
+            <header>
+                <h3>Spiel-Informationen</h3>
+            </header>
+            <ul>
+                <li><strong>Status:</strong> 
+                    {% if game.state.name == 'new' %}
+                        <span style="color: orange;">Neu</span>
+                    {% elif game.state.name == 'running' %}
+                        <span style="color: green;">Läuft</span>
+                    {% elif game.state.name == 'ended' %}
+                        <span style="color: red;">Beendet</span>
+                    {% endif %}
+                </li>
+                <li><strong>Spieler:</strong> {{ game.players|length }}</li>
+                <li><strong>Kreise:</strong> {{ game.circles|length }}</li>
+                <li><strong>Erstellt am:</strong> {{ game.created_at.strftime('%d.%m.%Y %H:%M') if game.created_at else "Unbekannt" }}</li>
+                {% if game.started_at %}
+                <li><strong>Gestartet am:</strong> {{ game.started_at.strftime('%d.%m.%Y %H:%M') }}</li>
+                {% elif game.state.name != 'new' %}
+                <li><strong>Gestartet am:</strong> Unbekannt</li>
+                {% endif %}
+                {% if game.endtime %}
+                <li><strong>Beendet am:</strong> {{ game.endtime.strftime('%d.%m.%Y %H:%M') }}</li>
+                {% endif %}
+            </ul>
+            
+            <footer>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                    <a href="{{ url_for('game', game_id=game.id) }}" role="button" class="secondary">
+                        Spiel-Seite öffnen
+                    </a>
+                    <button onclick="showChangePasswordDialog('{{ game.id }}')" class="outline">
+                        Gamemaster-Passwort ändern
+                    </button>
+                    {% if game.state.name != 'ended' %}
+                    <button onclick="confirmForceEndGame('{{ game.id }}', '{{ game.title }}')" class="outline">
+                        Spiel beenden
+                    </button>
+                    {% endif %}
+                    <button onclick="confirmDeleteGame('{{ game.id }}', '{{ game.title }}')" class="contrast outline">
+                        {{ icon('trash-can-outline') }} Spiel löschen
+                    </button>
+                </div>
+            </footer>
+        </article>
+        
+        <!-- Quick Stats -->
+        <article>
+            <header>
+                <h3>Statistiken</h3>
+            </header>
+            <ul>
+                <li><strong>Abgeschlossene Missionen:</strong> {{ completed_missions|length }}</li>
+                <li><strong>Massenmörder:</strong> {{ mass_murderers|length }}</li>
+                {% if game.started %}
+                <li><strong>Spielstatus:</strong> 
+                    {% if game.state.name == 'ended' %}Beendet{% else %}Läuft{% endif %}
+                </li>
+                {% else %}
+                <li><strong>Spielstatus:</strong> Nicht gestartet</li>
+                {% endif %}
+                <li><strong>Lebende Spieler:</strong> {{ game.players|selectattr('alive')|list|length }}</li>
+            </ul>
+        </article>
+    </div>
+    
+    <!-- Players List -->
+    <article>
+        <header>
+            <h3>Spieler ({{ game.players|length }})</h3>
+        </header>
+        
+        {% if game.players %}
+        <div class="overflow-auto">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Gruppe</th>
+                        <th>Status</th>
+                        <th>Kreis-Sets</th>
+                        <th>Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for player in game.players %}
+                    <tr>
+                        <td>{{ player.name }}</td>
+                        <td>{{ player.group or "-" }}</td>
+                        <td>
+                            {% if player.kicked %}
+                                <span style="color: red;">Gekickt</span>
+                            {% elif player.alive %}
+                                <span style="color: green;">Lebendig</span>
+                            {% else %}
+                                <span style="color: gray;">Tot</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ player.circleset_string or "-" }}</td>
+                        <td>
+                            <a href="{{ url_for('gamemaster_player_view', game_id=game.id, player_name=player.name) }}" 
+                               role="button" 
+                               class="secondary outline" 
+                               style="font-size: 0.8rem; padding: 0.25rem 0.5rem;">
+                                Details
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p><em>Keine Spieler registriert.</em></p>
+        {% endif %}
+    </article>
+    
+    <!-- Circles List -->
+    <article>
+        <header>
+            <h3>Kreise ({{ game.circles|length }})</h3>
+        </header>
+        
+        {% if game.circles %}
+        <div class="overflow-auto">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Set</th>
+                        <th>Mitglieder</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for circle in game.circles %}
+                    <tr>
+                        <td>{{ circle.name }}</td>
+                        <td>{{ circle.set or "-" }}</td>
+                        <td>{{ circle.players|length }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p><em>Keine Kreise definiert.</em></p>
+        {% endif %}
+    </article>
+    
+    <!-- Recent Missions -->
+    <article>
+        <header>
+            <h3>Abgeschlossene Missionen ({{ completed_missions|length }})</h3>
+        </header>
+        
+        {% if completed_missions %}
+        <div class="overflow-auto">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Position</th>
+                        <th>Killer</th>
+                        <th>Opfer</th>
+                        <th>Kreis</th>
+                        <th>Abgeschlossen am</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for mission in completed_missions[:20] %}
+                    <tr>
+                        <td>#{{ mission.position }}</td>
+                        <td>{{ mission.killer.name if mission.killer else "System" }}</td>
+                        <td>{{ mission.victim.name }}</td>
+                        <td>{{ mission.circle.name }}</td>
+                        <td>{{ mission.completion_date.strftime('%d.%m.%Y %H:%M') if mission.completion_date else "-" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if completed_missions|length > 20 %}
+        <small><em>Nur die ersten 20 Missionen werden angezeigt.</em></small>
+        {% endif %}
+        {% else %}
+        <p><em>Keine abgeschlossenen Missionen.</em></p>
+        {% endif %}
+    </article>
+</section>
+{% endblock %}
+
+{% block modals %}
+<!-- Delete Game Confirmation Dialog -->
+<dialog id="delete-game-dialog">
+    <article>
+        <header>
+            <button aria-label="Close" rel="prev" onclick="closeDialog('delete-game-dialog')"></button>
+            <p><strong>Spiel löschen</strong></p>
+        </header>
+        <p>Diese Aktion kann nicht rückgängig gemacht werden!</p>
+    </article>
+</dialog>
+
+<!-- Force End Game Confirmation Dialog -->
+<dialog id="force-end-game-dialog">
+    <article>
+        <header>
+            <button aria-label="Close" rel="prev" onclick="closeDialog('force-end-game-dialog')"></button>
+            <p><strong>Spiel beenden</strong></p>
+        </header>
+        <p>Sind Sie sicher, dass Sie dieses Spiel beenden möchten?</p>
+    </article>
+</dialog>
+
+<!-- Change Gamemaster Password Dialog -->
+<dialog id="change-password-dialog">
+    <article>
+        <header>
+            <button aria-label="Close" rel="prev" onclick="closeDialog('change-password-dialog')"></button>
+            <p><strong>Gamemaster-Passwort ändern</strong></p>
+        </header>
+        <form method="post" action="/admin/game/{{ game.id }}/change-gamemaster-password">
+            <fieldset>
+                {{ render_field(change_password_form.new_password) }}
+                {{ render_field(change_password_form.confirm_password) }}
+            </fieldset>
+            <footer style="display: flex; gap: 0.5rem;">
+                <button type="submit" name="form" value="{{ change_password_form.form_id }}">Passwort ändern</button>
+                <button type="button" onclick="closeDialog('change-password-dialog')" class="secondary">Abbrechen</button>
+            </footer>
+        </form>
+    </article>
+</dialog>
+
+<script>
+function confirmDeleteGame(gameId, gameTitle) {
+    const dialog = document.getElementById('delete-game-dialog');
+    const dialogContent = dialog.querySelector('p');
+    dialogContent.innerHTML = `
+        Sind Sie sicher, dass Sie das Spiel <strong>"${gameTitle}"</strong> (ID: ${gameId}) löschen möchten?<br>
+        <strong>Diese Aktion kann nicht rückgängig gemacht werden!</strong><br><br>
+        Geben Sie zur Bestätigung <strong>DELETE</strong> ein:
+        <form method="post" action="/admin/game/${gameId}/delete" style="margin-top: 1rem;">
+            <input type="text" name="confirm" placeholder="DELETE" required autocomplete="off" style="margin-bottom: 1rem;">
+            <div style="display: flex; gap: 0.5rem;">
+                <button type="submit" class="contrast">Spiel löschen</button>
+                <button type="button" onclick="closeDialog('delete-game-dialog')" class="secondary">Abbrechen</button>
+            </div>
+        </form>
+    `;
+    dialog.showModal();
+}
+
+function confirmForceEndGame(gameId, gameTitle) {
+    const dialog = document.getElementById('force-end-game-dialog');
+    const dialogContent = dialog.querySelector('p');
+    dialogContent.innerHTML = `
+        Sind Sie sicher, dass Sie das Spiel <strong>"${gameTitle}"</strong> beenden möchten?<br>
+        Das Spiel wird sofort beendet und kann nicht fortgesetzt werden.
+        <form method="post" action="/admin/game/${gameId}/force-end" style="margin-top: 1rem;">
+            <div style="display: flex; gap: 0.5rem;">
+                <button type="submit" class="contrast">Spiel beenden</button>
+                <button type="button" onclick="closeDialog('force-end-game-dialog')" class="secondary">Abbrechen</button>
+            </div>
+        </form>
+    `;
+    dialog.showModal();
+}
+
+function showChangePasswordDialog(gameId) {
+    const dialog = document.getElementById('change-password-dialog');
+    dialog.showModal();
+}
+
+function closeDialog(dialogId) {
+    document.getElementById(dialogId).close();
+}
+</script>
+{% endblock %}

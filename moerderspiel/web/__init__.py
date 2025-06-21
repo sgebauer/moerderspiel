@@ -13,7 +13,7 @@ from moerderspiel import config, graph, pdf, notification
 from moerderspiel.game import GameService, GameError
 from moerderspiel.player import PlayerService
 from moerderspiel.web.forms import AddPlayerForm, PlayerLoginForm, CreateGameForm, RecordMurderForm, \
-    GameMasterLoginForm, AddCircleForm, ChooseCirclesetForm, EditRulesForm
+    GameMasterLoginForm, AddCircleForm, ChooseCirclesetForm, EditRulesForm, AdminLoginForm, ChangeGamemasterPasswordForm
 
 
 app = Flask(__name__)
@@ -23,6 +23,11 @@ app.config["SECRET_KEY"] = config.SECRET_KEY
 db = SQLAlchemy(app, model_class=Base)
 with app.app_context():
     db.create_all()
+
+
+@app.context_processor
+def inject_config():
+    return dict(config=config)
 
 
 def with_game_service(f):
@@ -61,6 +66,19 @@ def needs_player_authentication(f):
             return f(service=service, **kwargs)
         else:
             return redirect(url_for('game', game_id=service.player.game.id, _anchor=PlayerLoginForm.form_id))
+
+    return decorated_function
+
+
+def needs_admin_authentication(f):
+    @wraps(f)
+    def decorated_function(**kwargs):
+        if not config.ADMIN_ENABLED:
+            abort(404)  # Admin interface disabled
+        if session.get('admin_authenticated'):
+            return f(**kwargs)
+        else:
+            return redirect(url_for('admin_login'))
 
     return decorated_function
 
@@ -314,25 +332,23 @@ def edit_rules(service: GameService):
         print(f"Expected form ID: {edit_rules_form.form_id}")
         
         if request.form.get('form') == edit_rules_form.form_id:
-            print("Form ID matches, validating...")
             if edit_rules_form.validate():
-                print(f"Validation successful. Rules data: {edit_rules_form.rules.data}")
                 try:
                     service.update_rules(edit_rules_form.rules.data)
                     db.session.commit()
                     flash('Spielregeln aktualisiert', 'success')
                     return redirect(url_for('gamemaster', game_id=service.game.id))
                 except Exception as e:
-                    print(f"Error updating rules: {str(e)}")
+                    log(f"[ERR]  Error saving rules: {str(e)}")
                     flash(f'Fehler beim Speichern der Regeln: {str(e)}', 'error')
             else:
-                print(f"Validation failed. Errors: {edit_rules_form.errors}")
                 # Validierungsfehler anzeigen
                 for field, errors in edit_rules_form.errors.items():
                     for error in errors:
                         flash(f'Fehler in {field}: {error}', 'error')
         else:
-            print("Form ID does not match")
+            print('[WARN] Invalid form submission detected. Form ID does not match expected value.')
+            flash('Ungültige Anfrage', 'error')
     
     return render_template('edit_rules.html.j2',
                            game=service.game,
@@ -407,6 +423,116 @@ def mass_murderer_per_circleset(game: Game) -> dict : #TODO hier stimmt was ned,
             ret[circle.set] = Mission.mass_murderers_by_circle(game, circle)
     return ret
 
+
+@app.route('/admin/login', methods=['GET', 'POST'])
+def admin_login():
+    """Admin login page"""
+    if not config.ADMIN_ENABLED:
+        abort(404)  # Admin interface disabled
+        
+    admin_form = AdminLoginForm(request.form)
+    
+    if request.method == 'POST' and admin_form.validate():
+        if admin_form.password.data == config.ADMIN_PASSWORD:
+            session['admin_authenticated'] = True
+            flash('Admin-Anmeldung erfolgreich', 'success')
+            return redirect(url_for('admin_dashboard'))
+        else:
+            flash('Falsches Admin-Passwort', 'error')
+    
+    return render_template('admin_login.html.j2', admin_form=admin_form)
+
+
+@app.route('/admin')
+@needs_admin_authentication
+def admin_dashboard():
+    """Main admin dashboard"""
+    games = db.session.scalars(db.select(Game)).all()
+    return render_template('admin_dashboard.html.j2', games=games)
+
+
+@app.route('/admin/logout')
+def admin_logout():
+    """Admin logout"""
+    session.pop('admin_authenticated', None)
+    flash('Admin-Abmeldung erfolgreich', 'success')
+    return redirect(url_for('index'))
+
+
+@app.route('/admin/game/<game_id>/delete', methods=['POST'])
+@needs_admin_authentication
+def admin_delete_game(game_id: str):
+    """Delete a game - requires confirmation"""
+    if request.form.get('confirm') != 'DELETE':
+        flash('Spiel-Löschung erfordert Bestätigung', 'error')
+        return redirect(url_for('admin_dashboard'))
+    
+    try:
+        game = db.get_or_404(Game, game_id)
+        db.session.delete(game)
+        db.session.commit()
+        flash(f'Spiel "{game.title}" wurde erfolgreich gelöscht', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Fehler beim Löschen des Spiels: {str(e)}', 'error')
+    
+    return redirect(url_for('admin_dashboard'))
+
+
+@app.route('/admin/game/<game_id>/force-end', methods=['POST'])
+@needs_admin_authentication
+def admin_force_end_game(game_id: str):
+    """Force end a game"""
+    try:
+        service = GameService(db.get_or_404(Game, game_id))
+        service.end_game()
+        db.session.commit()
+        flash(f'Spiel "{service.game.title}" wurde beendet', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Fehler beim Beenden des Spiels: {str(e)}', 'error')
+    
+    return redirect(url_for('admin_dashboard'))
+
+
+@app.route('/admin/game/<game_id>/view')
+@needs_admin_authentication
+def admin_view_game(game_id: str):
+    """View detailed game information in admin interface"""
+    game = db.get_or_404(Game, game_id)
+    service = GameService(game)
+    change_password_form = ChangeGamemasterPasswordForm()
+    
+    return render_template('admin_game_detail.html.j2', 
+                          game=game,
+                          service=service,
+                          completed_missions=Mission.completed_missions_in_game(game),
+                          mass_murderers=Mission.mass_murderers_by_game(game),
+                          change_password_form=change_password_form)
+
+
+@app.route('/admin/game/<game_id>/change-gamemaster-password', methods=['POST'])
+@needs_admin_authentication
+def admin_change_gamemaster_password(game_id: str):
+    """Change gamemaster password for a game"""
+    game = db.get_or_404(Game, game_id)
+    form = ChangeGamemasterPasswordForm(request.form)
+    
+    if form.validate():
+        try:
+            from werkzeug.security import generate_password_hash
+            game.gamemaster_password = generate_password_hash(form.new_password.data)
+            db.session.commit()
+            flash(f'Gamemaster-Passwort für Spiel "{game.title}" wurde erfolgreich geändert', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Fehler beim Ändern des Passworts: {str(e)}', 'error')
+    else:
+        for field, errors in form.errors.items():
+            for error in errors:
+                flash(f'{field}: {error}', 'error')
+    
+    return redirect(url_for('admin_view_game', game_id=game_id))
 
 
 @app.errorhandler(404)

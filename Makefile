@@ -20,4 +20,4 @@ deploy: ._container_push.cid ## Build, Push and Deploy the container
 
 dev: ._container.cid ## Start the container in development mode
 	mkdir -p ._cache ._data
-	podman run --rm -it -p 8080:8080 -v "$$(pwd)/._data:/data" -v "$$(pwd)/._cache:/cache" -e BASE_URL=http://localhost:8080 -e SECRET_KEY=secret -e PORT=8080 "$$(cat ._container.cid)"
+	podman run --rm -it -p 8080:8080 -v "$$(pwd)/._data:/data" -v "$$(pwd)/._cache:/cache" -e BASE_URL=http://localhost:8080 -e SECRET_KEY=secret -e PORT=8080 -e ADMIN_PASSWORD=admin "$$(cat ._container.cid)"
