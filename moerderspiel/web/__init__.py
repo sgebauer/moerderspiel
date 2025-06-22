@@ -548,6 +548,14 @@ def completed_missions_per_circleset(game: Game) -> dict :
             ret[circle.set] = ret[circle.set] + circle_missions
         else:
             ret[circle.set] = circle_missions
+    
+    # Sort missions by completion_date in descending order (most recent first)
+    # Handle None values by treating them as the oldest date
+    for circle_set in ret:
+        ret[circle_set] = sorted(ret[circle_set], 
+                                key=lambda m: m.completion_date or datetime.datetime.min, 
+                                reverse=True)
+    
     return ret
 
 def mass_murderer_per_circleset(game: Game) -> dict:

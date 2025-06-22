@@ -53,6 +53,10 @@ p {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
+.mission-card:first-child {
+    border-left: 4px solid var(--pico-color-green-500);
+}
+
 .mission-card .players {
     display: flex;
     justify-content: space-between;
@@ -167,6 +171,26 @@ h1 a,
 h1 a:focus {
     --pico-color: inherit;
     --pico-text-decoration: inherit;
+}
+
+/* Game header styling */
+.game-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.game-header h1 {
+    margin: 0;
+    flex: 1;
+}
+
+.login-button {
+    flex-shrink: 0;
+    margin: 0;
 }
 
 /* Game Info Section */
@@ -474,6 +498,21 @@ h2 {
         flex-direction: column;
         gap: 1.5rem;
     }
+    
+    .game-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .game-header h1 {
+        order: 1;
+    }
+    
+    .login-button {
+        order: 0;
+        align-self: flex-end;
+    }
 }
 
 @media (max-width: 480px) {
@@ -506,6 +545,10 @@ h2 {
         background: var(--pico-primary-background);
         color: white;
         text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    }
+    
+    .mission-card:first-child {
+        border-left-color: var(--pico-color-green-400);
     }
     
     .game-info-card {
