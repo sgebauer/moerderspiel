@@ -458,6 +458,10 @@ class Mission(Base):
         return list(killer._query(select(cls).where(cls.killer == killer)).all())
 
     @classmethod
+    def by_killer_in_circle(cls, killer: Player, circle: Circle) -> List['Mission']:
+        return list(killer._query(select(cls).where(cls.killer == killer).where(cls.circle == circle)).all())
+
+    @classmethod
     def mass_murderers_by_game(cls, game: Game) -> List[Player]:
         max_kill_count = game._query(
             select(func.count()).select_from(Mission).where(Mission.killer_id != None).group_by(
@@ -477,7 +481,17 @@ class Mission(Base):
         if not max_kill_count:
             return []
         else:
-            return list(p for p in game.players if len(cls.by_killer(p)) == max_kill_count)
+            # Get players who have the maximum kill count in this specific circle
+            killers_with_max_count = game._query(
+                select(Mission.killer_id, func.count()).select_from(Mission)
+                .where(Mission.killer_id != None)
+                .where(Mission.circle == circle)
+                .group_by(Mission.killer_id)
+                .having(func.count() == max_kill_count)
+            ).all()
+            
+            killer_ids = [killer_id for killer_id, _ in killers_with_max_count]
+            return [p for p in game.players if p.id in killer_ids]
 
 
 class NotificationAddressType(enum.StrEnum):

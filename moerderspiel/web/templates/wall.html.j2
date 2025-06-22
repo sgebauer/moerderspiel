@@ -9,29 +9,47 @@
 {% endblock %}
 
 {% block header %}
-<h1>Mörderwall - <a href=".">{{ game.title }}</a></h1>
+<div class="wall-header">
+    <h1>Mörderwall - <a href=".">{{ game.title }}</a></h1>
+</div>
 {% endblock %}
 
 {% block main %}
+{% if completed_missions_circleset %}
+<div class="wall-summary">
+    <div class="summary-stats">
+        <div class="stat-item">
+            <span class="stat-number">{{ completed_missions_circleset.values() | map('length') | sum }}</span>
+            <span class="stat-label">Gesamt Morde</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-number">{{ completed_missions_circleset.keys() | length }}</span>
+            <span class="stat-label">Aktive Kreise</span>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <div id="missions">
     {% if completed_missions_circleset %}
         {% for circle_set in completed_missions_circleset.keys() %}
             {% if completed_missions_circleset[circle_set] %}
-                <p>
-                    <h3>{{ circle_set or "Unassigned" }}</h3>
-                    <article>
+                <div class="mission-circle-section">
+                    <h3>{{ circle_set or "Unassigned" }} <span class="circle-count">({{ completed_missions_circleset[circle_set] | length }})</span></h3>
+                    <div class="mission-cards-container">
                     {% for mission in completed_missions_circleset[circle_set] -%}
                         {% include "partials/mission.html.j2" %}
                     {%- endfor %}
-                    </article>
-                </p>
+                    </div>
+                </div>
             {% endif %}
         {% endfor %}
     {% else %}
-        <article>
+        <div class="empty-wall">
+            <div class="empty-icon">🕊️</div>
             <p><em>Noch keine Morde passiert! Die Mörderwall wird hier die abgeschlossenen Missionen anzeigen.</em></p>
             <p><small>Game Status: {{ game.state }}</small></p>
-        </article>
+        </div>
     {% endif %}
 </div>
 {% endblock %}

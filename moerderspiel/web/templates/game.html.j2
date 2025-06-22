@@ -11,60 +11,79 @@
     <main>
         {% include "partials/gameinfo.html.j2" %}
 
-        <div role="row">
-            <h2>Massenmörder</h2>
-            <h3>Allgemein</h3>
-            <article>
-                {{ mass_murderers | map(attribute='name') | join(', ') }}
-                ({{ completed_missions | selectattr('killer', 'eq', mass_murderers[0]) | list | length }} Morde)
-            </article>
-            {% for circle_set in  mass_murderers_circleset.keys() -%}
-                <article>
-                    <h3>{{  circle_set }}</h3>
-                    {%  if mass_murderers_circleset[circle_set] %}
-                        {{ mass_murderers_circleset[circle_set] | map(attribute='name') | join(', ') }}
-                        ({{ completed_missions_circleset[circle_set] | selectattr('killer', 'eq', mass_murderers_circleset[circle_set][0]) | list | length }} Morde)
-                    {%  else %}
-                        Noch keine Morde... vielleicht ist das hier doch nur ein Farming-Simulator?
+        <div class="mass-murderers-section">
+            <h2>🏆 Massenmörder</h2>
+            
+            <div class="murderer-card general">
+                <h3>Allgemein</h3>
+                <div class="murderer-info">
+                    {% if mass_murderers %}
+                        <div class="murderer-names">{{ mass_murderers | map(attribute='name') | join(', ') }}</div>
+                        <div class="murder-count">{{ completed_missions | selectattr('killer', 'eq', mass_murderers[0]) | list | length }} Morde</div>
+                    {% else %}
+                        <div class="no-murders">Noch keine Morde... vielleicht ist das hier doch nur ein Farming-Simulator?</div>
                     {% endif %}
-                 </article>
+                </div>
+            </div>
 
+            {% for circle_set in mass_murderers_circleset.keys() -%}
+                <div class="murderer-card circle">
+                    <h3>{{ circle_set }}</h3>
+                    <div class="murderer-info">
+                        {% if mass_murderers_circleset[circle_set] %}
+                            <div class="murderer-names">{{ mass_murderers_circleset[circle_set] | map(attribute='name') | join(', ') }}</div>
+                            {% set circle_murders = completed_missions_circleset[circle_set] | selectattr('killer', 'in', mass_murderers_circleset[circle_set]) | list %}
+                            <div class="murder-count">{{ circle_murders | length }} Morde</div>
+                        {% else %}
+                            <div class="no-murders">Noch keine Morde in diesem Kreis... Peace was never an option! 🕊️</div>
+                        {% endif %}
+                    </div>
+                </div>
             {%- endfor %}
-
         </div>
     </main>
 
-    <footer class="grid">
+    <footer class="grid footer-actions">
         {% if game.started %}
-        <a role="button" class="primary" href="#record-murder">Mord melden</a>
+        <a role="button" class="primary" href="#record-murder">🗡️ Mord melden</a>
         {% else %}
-        <a role="button" class="primary" href="#{{ add_player_form.form_id }}">Spieler eintragen</a>
+        <a role="button" class="primary" href="#{{ add_player_form.form_id }}">👤 Spieler eintragen</a>
         {% endif %}
 
-        <a role="button" class="secondary" href="../rules/{{ game.id }}">Spielregeln</a>
+        <a role="button" class="secondary" href="../rules/{{ game.id }}">📜 Spielregeln</a>
 
         {% if game.started %}
-        <a role="button" class="secondary" href="../game/{{ game.id }}/wall">Mörderwall</a>
+        <a role="button" class="secondary" href="../game/{{ game.id }}/wall">🏆 Mörderwall</a>
         {% endif %}
 
-        <a role="button" class="secondary" href="../game/{{ game.id }}/graph.svg" target="_blank">Spielgraph</a>
+        <a role="button" class="secondary" href="../game/{{ game.id }}/graph.svg" target="_blank">📊 Spielgraph</a>
 
-        <a role="button" class="secondary" href="../gamemaster/{{ game.id }}">Gamemaster-Bereich</a>
+        <a role="button" class="secondary" href="../gamemaster/{{ game.id }}">⚙️ Gamemaster</a>
     </footer>
 </article>
 
-<div id="missions"> <!-- TODO nicht schön-->
-    {% for circle_set in  completed_missions_circleset.keys() %}
-        <p>
-            <h3> {{  circle_set }}</h3>
-            <article>
-            {% for mission in completed_missions_circleset[circle_set] %}
-                {% include "partials/mission.html.j2" %}
-            {% endfor %}
-            </article>
-        </p>
+{% if completed_missions_circleset %}
+<h2>🗡️ Letzte Morde</h2>
+<div id="missions">
+    {% for circle_set in completed_missions_circleset.keys() %}
+        {% if completed_missions_circleset[circle_set] %}
+            <div class="mission-circle-section">
+                <h3>{{ circle_set }}</h3>
+                <div class="mission-cards-container">
+                {% for mission in completed_missions_circleset[circle_set][:3] %}
+                    {% include "partials/mission.html.j2" %}
+                {% endfor %}
+                </div>
+                {% if completed_missions_circleset[circle_set] | length > 3 %}
+                    <p style="text-align: center; margin-top: 1rem;">
+                        <a href="../game/{{ game.id }}/wall">Alle {{ completed_missions_circleset[circle_set] | length }} Morde ansehen →</a>
+                    </p>
+                {% endif %}
+            </div>
+        {% endif %}
     {% endfor %}
 </div>
+{% endif %}
 {% endblock %}
 
 {% block modals %}

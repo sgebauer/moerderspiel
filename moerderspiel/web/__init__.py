@@ -550,14 +550,46 @@ def completed_missions_per_circleset(game: Game) -> dict :
             ret[circle.set] = circle_missions
     return ret
 
-def mass_murderer_per_circleset(game: Game) -> dict : #TODO hier stimmt was ned, da is leer wenn nciht sein sollte
+def mass_murderer_per_circleset(game: Game) -> dict:
     ret = {}
     circles = Circle.by_game(game)
+    
+    # Group circles by circle set
+    circle_sets = {}
     for circle in circles:
-        if circle.set in ret:
-            ret[circle.set] = ret[circle.set] + Mission.mass_murderers_by_circle(game, circle)
-        else:
-            ret[circle.set] = Mission.mass_murderers_by_circle(game, circle)
+        if circle.set not in circle_sets:
+            circle_sets[circle.set] = []
+        circle_sets[circle.set].append(circle)
+    
+    # For each circle set, find the mass murderers across all circles in that set
+    for circle_set, circles_in_set in circle_sets.items():
+        # Get all completed missions in this circle set
+        all_missions_in_set = []
+        for circle in circles_in_set:
+            all_missions_in_set.extend(Mission.completed_missions_in_game_by_circle(game, circle, exclude_kicks=True))
+        
+        if not all_missions_in_set:
+            ret[circle_set] = []
+            continue
+            
+        # Count kills per player in this circle set
+        kill_counts = {}
+        for mission in all_missions_in_set:
+            if mission.killer:
+                if mission.killer not in kill_counts:
+                    kill_counts[mission.killer] = 0
+                kill_counts[mission.killer] += 1
+        
+        if not kill_counts:
+            ret[circle_set] = []
+            continue
+            
+        # Find the maximum kill count in this circle set
+        max_kills = max(kill_counts.values())
+        
+        # Get all players with the maximum kill count
+        ret[circle_set] = [player for player, count in kill_counts.items() if count == max_kills]
+    
     return ret
 
 
@@ -600,8 +632,8 @@ def admin_logout():
 @needs_admin_authentication
 def admin_delete_game(game_id: str):
     """Delete a game - requires confirmation"""
-    if request.form.get('confirm') != game_id:
-        flash('Spiel-Löschung erfordert korrekte ID-Eingabe', 'error')
+    if request.form.get('confirm') != 'DELETE':
+        flash('Spiel-Löschung erfordert Bestätigung', 'error')
         return redirect(url_for('admin_dashboard'))
     
     try:
