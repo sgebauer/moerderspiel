@@ -3,7 +3,10 @@
 {% block main %}
 <article id="game-details">
     <header>
-        <h1>Spiel: {{ game.title }}</h1>
+        <h1>
+            Spiel: {{ game.title }}
+            <a role="button" class="primary" href="#{{ player_login_form.form_id }}" style="text-align: right;">Login</a>
+        </h1>
     </header>
     <main>
         {% include "partials/gameinfo.html.j2" %}
@@ -77,6 +80,7 @@
     {% with form = add_player_form %}
     <form method="post">
         {{ render_field(form.name, id=form.form_id) }}
+        {{ render_field(form.password) }}
         {{ render_field(form.group) }}
         {{ render_field(form.email) }}
         <button type="submit" name="form" value="{{ form.form_id }}">Spieler eintragen</button>
@@ -84,4 +88,17 @@
     {% endwith %}
 </main>
 {% endcall %}
+
+{% call dialog(title='Login') %}
+<main>
+    {% with form = player_login_form %}
+    <form method="post">
+        {{ render_field(form.name, id=form.form_id) }}
+        {{ render_field(form.password) }}
+        <button type="submit" name="form" value="{{ form.form_id }}">Login</button>
+    </form>
+    {% endwith %}
+</main>
+{% endcall %}
+
 {% endblock %}
