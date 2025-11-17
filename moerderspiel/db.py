@@ -115,7 +115,7 @@ class Player(Base):
     """
     The player's password.
     """
-    player_password: Mapped[str]
+    player_password: Mapped[Optional[str]]
 
     __table_args__ = (
         UniqueConstraint('game_id', 'name'),
@@ -147,6 +147,8 @@ class Player(Base):
         return list(game._query(select(cls).where(cls.game == game)).all())
 
     def check_player_password(self, password: str) -> bool:
+        if self.player_password is None:
+            return False
         return check_password_hash(self.player_password, password)
 
 
