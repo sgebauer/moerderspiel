@@ -212,11 +212,10 @@ def gamemaster(service: GameService):
 @with_player_service
 @needs_player_authentication
 def player(service: PlayerService):
-    # sets and circles wie anschaulich trennen
     return render_template('player.html.j2',
                            player=service.player,
                            game=service.player.game,
-                           completed_missions=Mission.completed_missions_in_game(service.player.game))
+                           open_missions=Mission.achievable_missions_by_current_owner(service.player))
 
 
 @app.get('/game/<game_id>/graph.svg')
