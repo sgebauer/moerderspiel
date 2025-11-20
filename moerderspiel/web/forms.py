@@ -13,7 +13,12 @@ class AddPlayerForm(Form):
     form_id = "add-player"
 
     name = StringField('Spielername',
-                       [validators.Length(max=constants.MAX_PLAYER_NAME_LENGTH)],
+                       [
+                           validators.Length(min=constants.MIN_PLAYER_NAME_LENGTH,
+                                             max=constants.MAX_PLAYER_NAME_LENGTH,
+                                             message=f"Dein Name muss zwischen {constants.MIN_PLAYER_NAME_LENGTH} und {constants.MAX_PLAYER_NAME_LENGTH} Zeichen lang sein."),
+                           validators.Regexp(constants.PLAYER_NAME_REGEX, message="Dein Name enthält ungültige Sonderzeichen.")
+                       ],
                        id=form_id,
                        description="""
                         Der Spielername muss innerhalb des Spiels eindeutig sein.
