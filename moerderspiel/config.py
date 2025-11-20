@@ -15,3 +15,4 @@ EMAIL_SMTP_PORT = os.environ.get('EMAIL_SMTP_PORT', default="25")
 EMAIL_SMTP_USER = os.environ.get('EMAIL_SMTP_USER', default='')
 EMAIL_SMTP_PASSWORD = os.environ.get('EMAIL_SMTP_PASSWORD', default='')
 EMAIL_HELO_HOSTNAME = os.environ.get('EMAIL_HELO_HOSTNAME', default=socket.getfqdn())
+EMAIL_SMTP_STARTTLS = os.environ.get('EMAIL_SMTP_STARTTLS', default='1') in ['1', 'yes', 'true']
