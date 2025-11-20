@@ -1,8 +1,8 @@
 SQLAlchemy~=2.0
 graphviz~=0.20
-Flask~=3.0
+Flask~=3.1
 Flask-SQLAlchemy~=3.1
-WTForms~=3.1
-Werkzeug~=3.0
-PyJWT~=2.8
+WTForms~=3.2
+Werkzeug~=3.1
+PyJWT~=2.10
 email-validator~=2.2

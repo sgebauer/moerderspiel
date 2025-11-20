@@ -1,15 +1,14 @@
-FROM docker.io/python:3.11-bookworm
+FROM codeberg.org/oneuid/debian:trixie-slim as base
 
-WORKDIR /opt/moerderspiel
+FROM codeberg.org/oneuid/mkosi:latest as builder
+COPY . /build/
+RUN --mount=type=cache,dst=/build/mkosi.pkgcache \
+    --mount=type=bind,from=base,src=/,dst=/base \
+    mkosi --directory /build --output-directory /output --output rootfs --format directory \
+          --base-tree /base --sandbox-tree /base/etc/dpkg/dpkg.cfg.d:/etc/dpkg/dpkg.cfg.d
 
-COPY requirements.txt .
-RUN apt-get update && \
-    apt-get --yes --no-install-recommends install latexmk texlive-latex-extra texlive-fonts-recommended texlive-luatex fonts-noto-core poppler-utils graphviz wngerman && \
-    luaotfload-tool --update --force && \
-    pip3 install --no-cache-dir -r requirements.txt && \
-    pip3 install gunicorn~=22.0.0
-
-COPY moerderspiel moerderspiel
+FROM base
+COPY --from=builder /output/rootfs/ /
 
 VOLUME /data
 VOLUME /cache
