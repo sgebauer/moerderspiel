@@ -1,0 +1,39 @@
+{% extends "_base.html.j2" %}
+
+{% block head %}
+<style>
+.error-container {
+    text-align: center;
+    padding: 2em 0;
+    max-width: 700px;
+    margin: auto;
+}
+
+.error-container p {
+    width: fit-content;
+    margin: 2em auto;
+}
+
+.error-icon {
+    font-size: 2em;
+    margin: 0.5em 0;
+    opacity: 0.7;
+}
+</style>
+{% endblock %}
+
+{% block main %}
+<div class="error-container">
+    <div class="error-icon">⚠️</div>
+    <h1>{{ error_code }}</h1>
+    <h2>{{ error_title }}</h2>
+    <p>
+        {{ error_message }}
+    </p>
+
+    <div class="grid">
+        <a href="/" role="button">Zur Startseite</a>
+        <a href="javascript:history.back()" role="button" class="outline">Zurück</a>
+    </div>
+</div>
+{% endblock %}

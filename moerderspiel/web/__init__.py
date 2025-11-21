@@ -5,11 +5,14 @@ import flask
 import jwt
 from flask import Flask, render_template, send_from_directory, request, url_for, redirect, flash, abort, session
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.exc import TimeoutError, OperationalError
+from werkzeug.exceptions import HTTPException, RequestTimeout, InternalServerError
 
 from moerderspiel.db import Base, Game, Mission, Circle, Player, NotificationAddressType
 from moerderspiel import config, graph, pdf, notification
 from moerderspiel.game import GameService, GameError
 from moerderspiel.player import PlayerService
+from moerderspiel.web.errors import ERROR_DESCRIPTIONS
 from moerderspiel.web.forms import AddPlayerForm, PlayerLoginForm, CreateGameForm, RecordMurderForm, \
     GameMasterLoginForm, AddCircleForm
 
@@ -291,3 +294,25 @@ def send_confirmation_message(player: Player, address_type: NotificationAddressT
         address=address,
         url=url_for('confirm_address', _external=True, token=token),
         game_title=player.game.title)
+
+
+@app.errorhandler(HTTPException)
+def serve_error_page(e: HTTPException):
+    if e.code in ERROR_DESCRIPTIONS:
+        return render_template('error.html.j2',
+                               error_code=e.code,
+                               error_title=ERROR_DESCRIPTIONS[e.code]['title'],
+                               error_message=ERROR_DESCRIPTIONS[e.code]['message']), e.code
+
+    return e
+
+
+@app.errorhandler(Exception)
+def handle_exception(e):
+    if isinstance(e, TimeoutError):
+        return RequestTimeout()
+    elif isinstance(e, OperationalError) and 'timeout' in str(e).lower():
+        return RequestTimeout()
+
+    app.logger.exception("Unhandled exception", exc_info=e)
+    return InternalServerError()
