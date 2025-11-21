@@ -87,6 +87,8 @@ class Game(Base):
     def check_gamemaster_password(self, password: str) -> bool:
         return check_password_hash(self.gamemaster_password, password)
 
+    def __repr__(self) -> str:
+        return f"<{type(self).__name__} id={self.id}>"
 
 class Player(Base):
     __tablename__ = "player"
@@ -151,6 +153,9 @@ class Player(Base):
             return False
         return check_password_hash(self.player_password, password)
 
+    def __repr__(self) -> str:
+        return f"<{type(self).__name__} game_id={self.game_id} name={self.name}>"
+
 
 class Circle(Base):
     __tablename__ = "circle"
@@ -197,6 +202,8 @@ class Circle(Base):
     def by_game_and_set(cls, game: Game, set: str) -> List['Circle']:
         return list(game._query(select(cls).where(cls.game == game).where(cls.set == set)).all())
 
+    def __repr__(self) -> str:
+        return f"<{type(self).__name__} game_id={self.game_id} name={self.name}>"
 
 
 class Mission(Base):
@@ -415,6 +422,9 @@ class Mission(Base):
         else:
             return list(p for p in game.players if len(cls.by_killer(p)) == max_kill_count)
 
+    def __repr__(self) -> str:
+        return f"<{type(self).__name__} game_id={self.circle.game_id} circle_name={self.circle.name} victim_name={self.victim.name} position={self.position}>"
+
 
 class NotificationAddressType(enum.StrEnum):
     email = enum.auto()
@@ -434,6 +444,7 @@ class NotificationAddress(Base):
 @event.listens_for(Game.gamemaster_password, 'set', named=True, retval=True)
 def hash_user_password(value: str, oldvalue: str, **kwargs):
     return value if value == oldvalue else generate_password_hash(value)
+
 
 @event.listens_for(Player.player_password, 'set', named=True, retval=True)
 def hash_user_password(value: str, oldvalue: str, **kwargs):
