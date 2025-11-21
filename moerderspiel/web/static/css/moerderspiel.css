@@ -8,6 +8,9 @@ body footer a {
     --pico-text-decoration: none;
 }
 
+article > header > h1 {
+    margin-bottom: 0;
+}
 
 p {
     text-align: justify;
