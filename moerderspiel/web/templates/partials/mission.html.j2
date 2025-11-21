@@ -9,6 +9,6 @@
     </main>
     <footer>
         <small class="circle-marker">{{ mission.circle.name }}</small>
-        <small>{{ mission.completion_date.strftime('%Y-%m-%d %H:%M') }}</small>
+        <small data-tooltip="{{ mission.completion_date.strftime('%Y-%m-%d %H:%M:%S') }}">{{ mission.completion_date.strftime('%Y-%m-%d %H:%M') }}</small>
     </footer>
 </article>

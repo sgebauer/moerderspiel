@@ -401,11 +401,17 @@ class Mission(Base):
 
     @classmethod
     def completed_missions_in_circle(cls, circle: Circle) -> List['Mission']:
-        return list(circle._query(select(cls).where(cls.circle == circle).where(cls.completion_date != None)).all())
+        return list(circle._query(select(cls)
+                                  .where(cls.circle == circle)
+                                  .where(cls.completion_date != None)
+                                  .order_by(cls.completion_date.desc())).all())
 
     @classmethod
     def completed_missions_in_game(cls, game: Game) -> List['Mission']:
-        return list(game._query(select(cls).where(cls.circle.has(Circle.game == game)).where(cls.completion_date != None)).all())
+        return list(game._query(select(cls)
+                                .where(cls.circle.has(Circle.game == game))
+                                .where(cls.completion_date != None)
+                                .order_by(cls.completion_date.desc())).all())
 
     @classmethod
     def by_killer(cls, killer: Player) -> List['Mission']:
