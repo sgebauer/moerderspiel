@@ -1,4 +1,5 @@
 import random
+import string
 from datetime import datetime
 
 from moerderspiel.db import Mission
@@ -56,3 +57,22 @@ def record_random_murder(service: GameService) -> None:
         when=datetime.now(),
         reason=random.choice(TESTGAME_REASONS),
         code=mission.code)
+
+
+def create_test_game(session, name: str = None, num_players: int = len(TESTGAME_PLAYERS), num_circles: int = 2,
+                     started: bool = True, num_murders: int = None, gamemaster_password: str = '') -> GameService:
+    if name is None:
+        name = 'test-' + ''.join(random.choices(string.hexdigits, k=4))
+    if num_murders is None:
+        num_murders = int(num_circles * num_players / 3)
+
+    service = GameService.create_new_game(session, id=name, title=name, gamemaster_password=gamemaster_password,
+                                          circles=list('Circle ' + str(i) for i in range(num_circles)))
+    populate_test_game(service, num_players)
+
+    if started:
+        service.start_game()
+        for i in range(num_murders):
+            record_random_murder(service)
+
+    return service
