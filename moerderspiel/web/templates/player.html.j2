@@ -4,53 +4,76 @@
 <article id="player-options-for-game">
     <header>
         <h1>
-            Player: {{ player.name }}
-            <form method="post" style="text-align: right;">
-                {% if game.started %}
-                    <a role="button" class="primary" target="_blank" title="Aufträge herunterladen"
-                       href="{{ url_for('player_missions', game_id=game.id, player_name=player.name) }}"
-                       {{ '' if player.alive else 'disabled' }}>
-                        {{ icon("file-document-outline") }}
-                    </a>
-                    <button class="primary" name="action" value="resend-player-missions" title="Aufträge neu versenden"
-                            {{ '' if player.alive and player.notifiable else 'disabled' }}>
-                        {{ icon("email-sync-outline") }}
-                    </button>
-                {% endif %}
-            </form>
+            Hallo {{ player.name }}!
         </h1>
+        <small>
+            (Du bist im Spiel "<a href="{{ url_for('game', game_id=game.id) }}">{{ game.title }}</a>")
+        </small>
     </header>
+    <main>
+        {% if game.started %}
+        <form method="post" class="grid">
+            <a role="button" class="primary" target="_blank" title="Aufträge herunterladen"
+               href="{{ url_for('player_missions', game_id=game.id, player_name=player.name) }}"
+               {{ '' if player.alive else 'disabled' }}>
+               {{ icon("file-document-outline") }} Aufträge herunterladen
+            </a>
+            <button class="primary" name="action" value="resend-player-missions" title="Aufträge neu versenden"
+                    {{ '' if player.alive and player.notifiable else 'disabled' }}>
+            {{ icon("email-sync-outline") }} Aufträge per Mail senden
+            </button>
+        </form>
+        {% else %}
+        <p>Das Spiel hat noch nicht begonnen.</p>
+        {% endif %}
+    </main>
+    <footer>
+        <div class="grid">
+            <a role="button" class="secondary" title="Zurück zur Spielübersicht"
+               href="{{ url_for('game', game_id=game.id) }}">
+                Zurück zur Spielseite
+            </a>
+            <span></span>
+        </div>
+    </footer>
 </article>
 
-{% if game.started and open_missions %}
+{% if game.started %}
 <article>
     <header>
-        <h3>Deine aktuellen Ziele</h3>
+        <h2>Deine aktuellen Ziele</h2>
     </header>
-    {% if player.alive %}
-    <table>
-        <thead>
-        <tr>
-            <th>Ziel</th>
-            <th>Gruppe</th>
-            <th>Kreis</th>
-            <th>Code</th>
-        </tr>
-        </thead>
-        <tbody>
-        {% for mission in open_missions %}
-        <tr>
-            <td>{{ mission.victim.name }}</td>
-            <td>{{ mission.victim.group }}</td>
-            <td>{{ mission.circle.name }}</td>
-            <td><code>{{ mission.code }}</code></td>
-        </tr>
-        {% endfor %}
-        </tbody>
-    </table>
+    <main>
+    {% if player.alive and open_missions %}
+        <details>
+            <summary role="button" class="secondary">
+                Aufklappen, um deine aktuellen Aufträge zu sehen
+            </summary>
+            <table>
+                <thead>
+                <tr>
+                    <th>Ziel</th>
+                    <th>Gruppe</th>
+                    <th>Kreis</th>
+                    <th>Code</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for mission in open_missions %}
+                <tr>
+                    <td>{{ mission.victim.name }}</td>
+                    <td>{{ mission.victim.group }}</td>
+                    <td>{{ mission.circle.name }}</td>
+                    <td><code>{{ mission.code }}</code></td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </details>
     {% else %}
-    <p><em>Du bist nicht mehr am Leben und hast keine aktiven Ziele.</em></p>
+        <p><em>Du hast keine offenen Aufträge mehr :(</em></p>
     {% endif %}
+    </main>
 </article>
 {% elif game.started %}
 <article>

@@ -8,7 +8,7 @@ body footer a {
     --pico-text-decoration: none;
 }
 
-article > header > h1 {
+article > header > h1, h2 {
     margin-bottom: 0;
 }
 

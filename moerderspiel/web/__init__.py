@@ -199,11 +199,15 @@ def gamemaster(service: GameService):
                            add_circle_form=add_circle_form)
 
 
-@app.get('/game/<game_id>/player/<player_name>')
+@app.route('/game/<game_id>/player/<player_name>')
 @with_game_service
 @with_player
 @needs_player_authentication
 def player(service: GameService, player: Player):
+    if request.method == 'POST' and 'action' in request.form:
+        if request.form['action'] == 'resend-player-missions':
+            service.send_mission_update(player)
+
     return render_template('player.html.j2',
                            player=player,
                            game=service.game,
