@@ -1,12 +1,14 @@
 import datetime
 
 from wtforms import Form, StringField, validators
+from wtforms.validators import ValidationError
 from wtforms.fields.choices import SelectField
 from wtforms.fields.datetime import DateTimeLocalField
 from wtforms.fields.simple import PasswordField, TextAreaField
 
 from moerderspiel import constants
-from moerderspiel.db import Game
+from moerderspiel.db import Player
+from moerderspiel.game import GameService
 
 
 class AddPlayerForm(Form):
@@ -41,23 +43,37 @@ class AddPlayerForm(Form):
                         Du kannst dir optional deine Mordaufträge per E-Mail zuschicken lassen.
                         """)
     password = PasswordField('Passwort',
-                             [validators.EqualTo('password')],
                              description="""
                              Du kannst optional ein Passwort angeben, um vor Spielstart die Teilname an den 
-                             verschiedenen Kreisen und Multispielen zu änder und nach Spielstart deine Aufträge 
+                             verschiedenen Kreisen und Multispielen zu ändern und nach Spielstart deine Aufträge
                              einzusehen.
                              Gib das Passwort nicht an andere Mitspieler weiter.
                              """)
+
+    def __init__(self, service: GameService, *args, **kwargs: object):
+        super().__init__(*args, **kwargs)
+        self.service = service
+
+    def validate_name(self, field):
+        if Player.by_game_and_name(self.service.game, field.data):
+            raise ValidationError("Ein Spieler mit diesem Namen existiert bereits")
 
 
 class PlayerLoginForm(Form):
     form_id = "login-player"
 
-    name = StringField('Spielername',
-                       [validators.Length(max=constants.MAX_PLAYER_NAME_LENGTH)],
-                       id=form_id)
-    password = PasswordField('Passwort',
-                             [validators.EqualTo('password')])
+    name = SelectField('Spielername', [validators.InputRequired()], id=form_id)
+    password = PasswordField('Passwort', [validators.InputRequired()])
+
+    def __init__(self, service: GameService, *args, **kwargs: object):
+        super().__init__(*args, **kwargs)
+        self.service = service
+        self.name.choices = [(p.name, p.name) for p in service.game.players]
+
+    def validate_password(self, field):
+        player = self.service.get_player(self.name.data)
+        if not player.check_player_password(field.data):
+            raise ValidationError('Falsches Passwort')
 
 
 class CreateGameForm(Form):
@@ -114,11 +130,19 @@ class AddCircleForm(Form):
 class GameMasterLoginForm(Form):
     form_id = "gamemaster-login"
 
-    password = PasswordField('Passwort',
+    password = PasswordField('Passwort', [validators.InputRequired()],
                              description="""
                              Das Gamemaster-Passwort wird beim Erstellen des Spiels gesetzt und kann aktuell leider
                              nicht zurückgesetzt werden.
                              """)
+
+    def __init__(self, service: GameService, *args, **kwargs: object):
+        super().__init__(*args, **kwargs)
+        self.service = service
+
+    def validate_password(self, field):
+        if not self.service.game.check_gamemaster_password(field.data):
+            raise ValidationError("Falsches Passwort")
 
 
 class RecordMurderForm(Form):
@@ -145,9 +169,9 @@ class RecordMurderForm(Form):
                                 Beschreibe kurz, wie der Mord passiert ist. Kreative Ausschmückungen sind erwünscht.
                                 """)
 
-    def __init__(self, game: Game, *args, **kwargs: object):
+    def __init__(self, service: GameService, *args, **kwargs: object):
         super().__init__(*args, **kwargs)
-        self.killer.choices = [(p.name, p.name) for p in game.players]
-        self.victim.choices = [(p.name, p.name) for p in game.players]
-        self.circle.choices = [(c.name, c.name) for c in game.circles]
+        self.killer.choices = [(p.name, p.name) for p in service.game.players]
+        self.victim.choices = [(p.name, p.name) for p in service.game.players]
+        self.circle.choices = [(c.name, c.name) for c in service.game.circles]
         self.when.default = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M')

@@ -449,12 +449,12 @@ class NotificationAddress(Base):
 
 @event.listens_for(Game.gamemaster_password, 'set', named=True, retval=True)
 def hash_user_password(value: str, oldvalue: str, **kwargs):
-    return value if value == oldvalue else generate_password_hash(value)
+    return value if (value is None or value == oldvalue) else generate_password_hash(value)
 
 
 @event.listens_for(Player.player_password, 'set', named=True, retval=True)
 def hash_user_password(value: str, oldvalue: str, **kwargs):
-    return value if value == oldvalue else generate_password_hash(value)
+    return value if (value is None or value == oldvalue) else generate_password_hash(value)
 
 
 def connect_to_database() -> Engine:

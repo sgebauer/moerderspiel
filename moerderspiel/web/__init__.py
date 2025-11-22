@@ -93,23 +93,18 @@ def index():
 @app.route('/game/<game_id>', methods=['GET', 'POST'])
 @with_game_service
 def game(service: GameService):
-    add_player_form = AddPlayerForm(request.form)
-    record_murder_form = RecordMurderForm(service.game, request.form)
-    gamemaster_login_form = GameMasterLoginForm(request.form)
-    player_login_form = PlayerLoginForm(request.form)
+    add_player_form = AddPlayerForm(service, request.form)
+    record_murder_form = RecordMurderForm(service, request.form)
+    gamemaster_login_form = GameMasterLoginForm(service, request.form)
+    player_login_form = PlayerLoginForm(service, request.form)
 
     if request.method == 'POST' and request.form['form'] == add_player_form.form_id:
         if add_player_form.validate():
             try:
-                if add_player_form.password.data:
-                    player_login = service.add_player(
-                        name=add_player_form.name.data,
-                        group=add_player_form.group.data,
-                        player_password=add_player_form.password.data)
-                else:
-                    player_login = service.add_player(
-                        name=add_player_form.name.data,
-                        group=add_player_form.group.data)
+                player_login = service.add_player(
+                    name=add_player_form.name.data,
+                    group=add_player_form.group.data,
+                    player_password=add_player_form.password.data or None)
                 for circle in service.game.circles:
                     service.add_player_to_circle(player_login, circle)
                 db.session.commit()
@@ -138,25 +133,16 @@ def game(service: GameService):
     elif request.method == 'POST' and request.form['form'] == gamemaster_login_form.form_id:
         if gamemaster_login_form.validate():
             try:
-                if service.check_gamemaster_password(gamemaster_login_form.password.data):
-                    session['gamemaster_authenticated'] = (session.get('gamemaster_authenticated') or []) + [
-                        service.game.id]
-                    return redirect(url_for('gamemaster', game_id=service.game.id, _anchor='top'))
-                else:
-                    flash('Falsches Passwort', 'error')
+                session['gamemaster_authenticated'] = (session.get('gamemaster_authenticated') or []) + [service.game.id]
+                return redirect(url_for('gamemaster', game_id=service.game.id, _anchor='top'))
             except GameError as e:
                 flash(str(e), 'error')
     elif request.method == 'POST' and request.form['form'] == player_login_form.form_id:
         if player_login_form.validate():
             try:
-                if service.check_player_password(player_login_form.password.data, player_login_form.name.data):
-                    player_login = service.get_player(player_login_form.name.data)
-                    session['player_authenticated'] = (session.get('player_authenticated') or []) + [
-                        player_login.id]
-                    return redirect(
-                        url_for('player', player_id=player_login.id, _anchor='top'))
-                else:
-                    flash('Falsches Passwort', 'error')
+                player = service.get_player(player_login_form.name.data)
+                session['player_authenticated'] = (session.get('player_authenticated') or []) + [player.id]
+                return redirect(url_for('player', player_id=player.id, _anchor='top'))
             except GameError as e:
                 flash(str(e), 'error')
 
