@@ -296,9 +296,9 @@ def serve_error_page(e: HTTPException):
 @app.errorhandler(Exception)
 def handle_exception(e):
     if isinstance(e, TimeoutError):
-        return RequestTimeout()
+        return serve_error_page(RequestTimeout())
     elif isinstance(e, OperationalError) and 'timeout' in str(e).lower():
-        return RequestTimeout()
+        return serve_error_page(RequestTimeout())
 
     app.logger.exception("Unhandled exception", exc_info=e)
-    return InternalServerError()
+    return serve_error_page(InternalServerError())
