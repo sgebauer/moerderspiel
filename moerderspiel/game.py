@@ -15,6 +15,10 @@ class GameError(RuntimeError):
     def __str__(self):
         return self.value
 
+class NoSuchPlayerError(GameError):
+    def __init__(self, value):
+        super().__init__(value)
+
 
 class GameService:
     def __init__(self, game: Game):
@@ -28,7 +32,7 @@ class GameService:
         else:
             player = Player.by_game_and_name(self.game, player)
             if not player:
-                raise GameError("Player does not exist")
+                raise NoSuchPlayerError("Player does not exist")
             return player
 
     def get_circle(self, circle: str | Circle) -> Circle:

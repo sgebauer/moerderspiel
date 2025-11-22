@@ -10,8 +10,7 @@ from werkzeug.exceptions import HTTPException, RequestTimeout, InternalServerErr
 
 from moerderspiel.db import Base, Game, Mission, Circle, Player, NotificationAddressType
 from moerderspiel import config, graph, pdf, notification
-from moerderspiel.game import GameService, GameError
-from moerderspiel.player import PlayerService
+from moerderspiel.game import GameService, GameError, NoSuchPlayerError
 from moerderspiel.web.errors import ERROR_DESCRIPTIONS
 from moerderspiel.web.forms import AddPlayerForm, PlayerLoginForm, CreateGameForm, RecordMurderForm, \
     GameMasterLoginForm, AddCircleForm
@@ -34,11 +33,14 @@ def with_game_service(f):
     return decorated_function
 
 
-def with_player_service(f):
+def with_player(f):
     @wraps(f)
-    def decorated_function(player_id: str, **kwargs):
-        kwargs['service'] = PlayerService(db.get_or_404(Player, player_id))
-        return f(**kwargs)
+    def decorated_function(service: GameService, player_name: str, **kwargs):
+        try:
+            kwargs['player'] = service.get_player(player_name)
+        except NoSuchPlayerError:
+            return 404
+        return f(service=service, **kwargs)
 
     return decorated_function
 
@@ -56,11 +58,11 @@ def needs_gamemaster_authentication(f):
 
 def needs_player_authentication(f):
     @wraps(f)
-    def decorated_function(service: PlayerService, **kwargs):
-        if service.player.id in (session.get('player_authenticated') or []):
-            return f(service=service, **kwargs)
+    def decorated_function(player: Player, **kwargs):
+        if player.id in (session.get('player_authenticated') or []):
+            return f(player=player, **kwargs)
         else:
-            return redirect(url_for('game', game_id=service.player.game.id, _anchor=PlayerLoginForm.form_id))
+            return redirect(url_for('game', game_id=player.game.id, _anchor=PlayerLoginForm.form_id))
 
     return decorated_function
 
@@ -142,7 +144,7 @@ def game(service: GameService):
             try:
                 player = service.get_player(player_login_form.name.data)
                 session['player_authenticated'] = (session.get('player_authenticated') or []) + [player.id]
-                return redirect(url_for('player', player_id=player.id, _anchor='top'))
+                return redirect(url_for('player', game_id=service.game.id, player_name=player.name, _anchor='top'))
             except GameError as e:
                 flash(str(e), 'error')
 
@@ -197,14 +199,15 @@ def gamemaster(service: GameService):
                            add_circle_form=add_circle_form)
 
 
-@app.get('/player/<player_id>')
-@with_player_service
+@app.get('/game/<game_id>/player/<player_name>')
+@with_game_service
+@with_player
 @needs_player_authentication
-def player(service: PlayerService):
+def player(service: GameService, player: Player):
     return render_template('player.html.j2',
-                           player=service.player,
-                           game=service.player.game,
-                           open_missions=Mission.achievable_missions_by_current_owner(service.player))
+                           player=player,
+                           game=service.game,
+                           open_missions=Mission.achievable_missions_by_current_owner(player))
 
 
 @app.get('/game/<game_id>/graph.svg')
