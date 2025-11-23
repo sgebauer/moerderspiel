@@ -7,11 +7,21 @@ from wtforms.fields.datetime import DateTimeLocalField
 from wtforms.fields.simple import PasswordField, TextAreaField
 
 from moerderspiel import constants
-from moerderspiel.db import Player
+from moerderspiel.db import Player, Game, Circle, Mission
 from moerderspiel.game import GameService
 
 
-class AddPlayerForm(Form):
+class BaseForm(Form):
+    def __init__(self, on_submit=None, **kwargs):
+        super().__init__(**kwargs)
+        self.on_submit = on_submit
+
+    def handle_form_submit(self):
+        if self.validate():
+            return self.on_submit(self)
+
+
+class AddPlayerForm(BaseForm):
     form_id = "add-player"
     form_title = "Spieler eintragen"
 
@@ -50,8 +60,8 @@ class AddPlayerForm(Form):
                              Gib das Passwort nicht an andere Mitspieler weiter.
                              """)
 
-    def __init__(self, service: GameService, *args, **kwargs: object):
-        super().__init__(*args, **kwargs)
+    def __init__(self, service: GameService, **kwargs):
+        super().__init__(**kwargs)
         self.service = service
 
     def validate_name(self, field):
@@ -59,15 +69,15 @@ class AddPlayerForm(Form):
             raise ValidationError("Ein Spieler mit diesem Namen existiert bereits")
 
 
-class PlayerLoginForm(Form):
+class PlayerLoginForm(BaseForm):
     form_id = "login-player"
     form_title = "Login"
 
     name = SelectField('Spielername', [validators.InputRequired()])
     password = PasswordField('Passwort', [validators.InputRequired()])
 
-    def __init__(self, service: GameService, *args, **kwargs: object):
-        super().__init__(*args, **kwargs)
+    def __init__(self, service: GameService, **kwargs):
+        super().__init__(**kwargs)
         self.service = service
         self.name.choices = [(p.name, p.name) for p in service.game.players]
 
@@ -77,7 +87,7 @@ class PlayerLoginForm(Form):
             raise ValidationError('Falsches Passwort')
 
 
-class CreateGameForm(Form):
+class CreateGameForm(BaseForm):
     form_id = "create-game"
     form_title = "Spiel erstellen"
 
@@ -109,13 +119,22 @@ class CreateGameForm(Form):
                              """)
     confirm_password = PasswordField('Passwort bestätigen')
 
+    def validate_game_id(self, field):
+        if Game.exists_by_id(self.session, field.data):
+            print("Foo")
+            raise ValidationError("Ein Spiel mit dieser ID existiert bereits")
 
-class AddCircleForm(Form):
+    def __init__(self, session, **kwargs):
+        super().__init__(**kwargs)
+        self.session = session
+
+
+class AddCircleForm(BaseForm):
     form_id = "add-circle"
     form_title = "Kreis hinzufügen"
 
     name = StringField('Name des Kreises',
-                       [validators.Length(max=constants.MAX_CIRCLE_NAME_LENGTH)],
+                       [validators.Length(min=constants.MIN_CIRCLE_NAME_LENGTH, max=constants.MAX_CIRCLE_NAME_LENGTH)],
                        description="""
                        Der Name muss innerhalb des Spiels eindeutig sein.
                        """)
@@ -127,8 +146,16 @@ class AddCircleForm(Form):
                       spielen, lasse dieses Feld leer.
                       """)
 
+    def validate_name(self, field):
+        if Circle.by_game_and_name(self.service.game, field.data):
+            raise ValidationError("Ein Kreis mit diesem Namen existiert bereits")
 
-class GameMasterLoginForm(Form):
+    def __init__(self, service, **kwargs):
+        super().__init__(**kwargs)
+        self.service = service
+
+
+class GameMasterLoginForm(BaseForm):
     form_id = "gamemaster-login"
     form_title = "Gamemaster-Login"
     form_submit_text = "Login"
@@ -139,8 +166,8 @@ class GameMasterLoginForm(Form):
                              nicht zurückgesetzt werden.
                              """)
 
-    def __init__(self, service: GameService, *args, **kwargs: object):
-        super().__init__(*args, **kwargs)
+    def __init__(self, service: GameService, **kwargs):
+        super().__init__(**kwargs)
         self.service = service
 
     def validate_password(self, field):
@@ -148,7 +175,7 @@ class GameMasterLoginForm(Form):
             raise ValidationError("Falsches Passwort")
 
 
-class RecordMurderForm(Form):
+class RecordMurderForm(BaseForm):
     form_id = "record-murder"
     form_title = "Mord eintragen"
 
@@ -164,9 +191,10 @@ class RecordMurderForm(Form):
     when = DateTimeLocalField('Zeitpunkt',
                               description="Wann ist der Mord passiert?",
                               default=datetime.datetime.now,
-                              format='%Y-%m-%d %H:%M')
+                              format='%Y-%m-%dT%H:%M')
 
     mission_code = StringField('Auftrags-Code',
+                               [validators.Length(min=constants.MISSION_CODE_LENGTH, max=constants.MISSION_CODE_LENGTH)],
                                description="Der Code des Auftrags, der gerade erledigt wurde.")
 
     description = TextAreaField('Kreative Tatbeschreibung',
@@ -175,8 +203,21 @@ class RecordMurderForm(Form):
                                 Beschreibe kurz, wie der Mord passiert ist. Kreative Ausschmückungen sind erwünscht.
                                 """)
 
-    def __init__(self, service: GameService, *args, **kwargs: object):
-        super().__init__(*args, **kwargs)
+    def validate_killer(self, field):
+        mission = Mission.by_victim_in_circle(self.service.get_player(self.victim.data),
+                                              self.service.get_circle(self.circle.data))
+        if mission.current_owner != self.service.get_player(field.data):
+            raise ValidationError("Dieser Auftrag gehört dir nicht. Hast du alle vorherigen Morde schon eingetragen?")
+
+    def validate_mission_code(self, field):
+        mission = Mission.by_victim_in_circle(self.service.get_player(self.victim.data),
+                                              self.service.get_circle(self.circle.data))
+        if field.data != mission.code:
+            raise ValidationError("Das ist nicht der richtige Code für diesen Auftrag")
+
+    def __init__(self, service: GameService, **kwargs):
+        super().__init__(**kwargs)
+        self.service = service
         self.killer.choices = [(p.name, p.name) for p in service.game.players]
         self.victim.choices = [(p.name, p.name) for p in service.game.players]
         self.circle.choices = [(c.name, c.name) for c in service.game.circles]

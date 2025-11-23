@@ -69,131 +69,120 @@ def needs_player_authentication(f):
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    create_game_form = CreateGameForm()
+    def on_create_game(form):
+        service = GameService.create_new_game(
+            session=db.session,
+            id=form.game_id.data,
+            title=form.title.data,
+            gamemaster_password=form.password.data
+        )
+        db.session.commit()
+        session['gamemaster_authenticated'] = (session.get('gamemaster_authenticated') or []) + [service.game.id]
+        return redirect(url_for('gamemaster', game_id=service.game.id, _anchor='top'))
 
-    if request.method == 'POST' and request.form['form'] == CreateGameForm.form_id:
-        create_game_form = CreateGameForm(request.form)
-        if create_game_form.validate():
-            try:
-                service = GameService.create_new_game(
-                    session=db.session,
-                    id=create_game_form.game_id.data,
-                    title=create_game_form.title.data,
-                    gamemaster_password=create_game_form.password.data,
-                )
-                db.session.commit()
-                session['gamemaster_authenticated'] = (session.get('gamemaster_authenticated') or []) + [
-                    service.game.id]
-                return redirect(url_for('gamemaster', game_id=service.game.id, _anchor='top'))
-            except GameError as e:
-                flash(str(e), 'error')
+    forms = {
+        CreateGameForm.form_id: CreateGameForm(db.session, formdata=request.form, on_submit=on_create_game)
+    }
 
-    return render_template('index.html.j2',
-                           forms=[create_game_form])
+    result = None
+    if request.method == 'POST' and 'form' in request.form:
+        result = forms[request.form['form']].handle_form_submit()
+
+    return result or render_template('index.html.j2', forms=forms.values())
 
 
 @app.route('/game/<game_id>', methods=['GET', 'POST'])
 @with_game_service
 def game(service: GameService):
-    add_player_form = AddPlayerForm(service, request.form)
-    record_murder_form = RecordMurderForm(service, request.form)
-    gamemaster_login_form = GameMasterLoginForm(service, request.form)
-    player_login_form = PlayerLoginForm(service, request.form)
+    def on_add_player(form: AddPlayerForm):
+        player = service.add_player(
+            name=form.name.data,
+            group=form.group.data,
+            player_password=form.password.data or None)
+        for circle in service.game.circles:
+            service.add_player_to_circle(player, circle)
+        db.session.commit()
 
-    if request.method == 'POST' and request.form['form'] == add_player_form.form_id:
-        if add_player_form.validate():
-            try:
-                player_login = service.add_player(
-                    name=add_player_form.name.data,
-                    group=add_player_form.group.data,
-                    player_password=add_player_form.password.data or None)
-                for circle in service.game.circles:
-                    service.add_player_to_circle(player_login, circle)
-                db.session.commit()
+        if form.email.data:
+            send_confirmation_message(player, NotificationAddressType.email, form.email.data)
 
-                if add_player_form.email.data:
-                    send_confirmation_message(player_login, NotificationAddressType.email, add_player_form.email.data)
+        flash('Spieler eingetragen', 'success')
+        return redirect(url_for('game', game_id=service.game.id, _anchor='top'))
 
-                flash('Spieler eingetragen', 'success')
-                return redirect(url_for('game', game_id=service.game.id, _anchor='top'))
-            except GameError as e:
-                flash(str(e), 'error')
-    elif request.method == 'POST' and request.form['form'] == record_murder_form.form_id:
-        if record_murder_form.validate():
-            try:
-                service.record_murder(killer=record_murder_form.killer.data,
-                                      victim=record_murder_form.victim.data,
-                                      circle=record_murder_form.circle.data,
-                                      when=record_murder_form.when.data,
-                                      code=record_murder_form.mission_code.data,
-                                      reason=record_murder_form.description.data)
-                db.session.commit()
-                flash('Mord eingetragen', 'success')
-                return redirect(url_for('game', game_id=service.game.id, _anchor='top'))
-            except GameError as e:
-                flash(str(e), 'error')
-    elif request.method == 'POST' and request.form['form'] == gamemaster_login_form.form_id:
-        if gamemaster_login_form.validate():
-            try:
-                session['gamemaster_authenticated'] = (session.get('gamemaster_authenticated') or []) + [service.game.id]
-                return redirect(url_for('gamemaster', game_id=service.game.id, _anchor='top'))
-            except GameError as e:
-                flash(str(e), 'error')
-    elif request.method == 'POST' and request.form['form'] == player_login_form.form_id:
-        if player_login_form.validate():
-            try:
-                player = service.get_player(player_login_form.name.data)
-                session['player_authenticated'] = (session.get('player_authenticated') or []) + [player.id]
-                return redirect(url_for('player', game_id=service.game.id, player_name=player.name, _anchor='top'))
-            except GameError as e:
-                flash(str(e), 'error')
+    def on_record_murder(form: RecordMurderForm):
+        service.record_murder(killer=form.killer.data,
+                              victim=form.victim.data,
+                              circle=form.circle.data,
+                              when=form.when.data,
+                              code=form.mission_code.data,
+                              reason=form.description.data)
+        db.session.commit()
+        flash('Mord eingetragen', 'success')
+        return redirect(url_for('game', game_id=service.game.id, _anchor='top'))
 
-    return render_template('game.html.j2',
-                           game=service.game,
-                           completed_missions=Mission.completed_missions_in_game(service.game),
-                           mass_murderers=Mission.mass_murderers_by_game(service.game),
-                           forms=[add_player_form, record_murder_form, gamemaster_login_form, player_login_form])
+    def on_gamemaster_login(form: GameMasterLoginForm):
+        session['gamemaster_authenticated'] = (session.get('gamemaster_authenticated') or []) + [service.game.id]
+        return redirect(url_for('gamemaster', game_id=service.game.id, _anchor='top'))
+
+    def on_player_login(form: PlayerLoginForm):
+        player = service.get_player(form.name.data)
+        session['player_authenticated'] = (session.get('player_authenticated') or []) + [player.id]
+        return redirect(url_for('player', game_id=service.game.id, player_name=player.name, _anchor='top'))
+
+    forms = {
+        AddPlayerForm.form_id: AddPlayerForm(service, formdata=request.form, on_submit=on_add_player),
+        RecordMurderForm.form_id: RecordMurderForm(service, formdata=request.form, on_submit=on_record_murder),
+        GameMasterLoginForm.form_id: GameMasterLoginForm(service, formdata=request.form, on_submit=on_gamemaster_login),
+        PlayerLoginForm.form_id: PlayerLoginForm(service, formdata=request.form, on_submit=on_player_login)
+    }
+
+    result = None
+    if request.method == 'POST' and 'form' in request.form:
+        result = forms[request.form['form']].handle_form_submit()
+
+    return result or render_template('game.html.j2',
+                                     game=service.game,
+                                     completed_missions=Mission.completed_missions_in_game(service.game),
+                                     mass_murderers=Mission.mass_murderers_by_game(service.game),
+                                     forms=forms.values())
 
 
 @app.route('/gamemaster/<game_id>', methods=['GET', 'POST'])
 @with_game_service
 @needs_gamemaster_authentication
 def gamemaster(service: GameService):
-    add_circle_form = AddCircleForm(request.form)
+    def on_add_circle(form):
+        service.add_circle(form.name.data, set=form.set.data, players=None)
+        db.session.commit()
+        return redirect(url_for('gamemaster', game_id=service.game.id, _anchor='top'))
 
-    if request.method == 'POST' and 'action' in request.form:
-        try:
-            service.sanitize_game_data()
-            db.session.commit()
+    forms = {
+        AddCircleForm.form_id: AddCircleForm(service, formdata=request.form, on_submit=on_add_circle)
+    }
 
-            if request.form['action'] == 'start-game':
-                service.start_game()
-            elif request.form['action'] == 'end-game':
-                service.end_game()
-            elif request.form['action'] == 'delete-player':
-                service.delete_player(request.form['player'])
-            elif request.form['action'] == 'kick-player':
-                service.kick_player(request.form['player'], datetime.datetime.now(), "Spieler wurde gekickt")
-            elif request.form['action'] == 'resend-player-missions':
-                service.send_mission_update(request.form['player'])
-            elif request.form['action'] == 'delete-circle':
-                service.delete_circle(request.form['circle'])
-            db.session.commit()
-            return redirect(url_for('gamemaster', game_id=service.game.id, _anchor='top'))
-        except GameError as e:
-            flash(str(e), 'error')
-    elif request.method == 'POST' and request.form['form'] == add_circle_form.form_id:
-        if add_circle_form.validate():
-            try:
-                service.add_circle(add_circle_form.name.data, set=add_circle_form.set.data, players=None)
-                db.session.commit()
-                return redirect(url_for('gamemaster', game_id=service.game.id, _anchor='top'))
-            except GameError as e:
-                flash(str(e), 'error')
+    result = None
+    if request.method == 'POST' and 'form' in request.form:
+        result = forms[request.form['form']].handle_form_submit()
+    elif request.method == 'POST' and 'action' in request.form:
+        service.sanitize_game_data()
+        db.session.commit()
 
-    return render_template('gamemaster.html.j2',
-                           game=service.game,
-                           forms=[add_circle_form])
+        if request.form['action'] == 'start-game':
+            service.start_game()
+        elif request.form['action'] == 'end-game':
+            service.end_game()
+        elif request.form['action'] == 'delete-player':
+            service.delete_player(request.form['player'])
+        elif request.form['action'] == 'kick-player':
+            service.kick_player(request.form['player'], datetime.datetime.now(), "Spieler wurde gekickt")
+        elif request.form['action'] == 'resend-player-missions':
+            service.send_mission_update(request.form['player'])
+        elif request.form['action'] == 'delete-circle':
+            service.delete_circle(request.form['circle'])
+        db.session.commit()
+        result = redirect(url_for('gamemaster', game_id=service.game.id, _anchor='top'))
+
+    return result or render_template('gamemaster.html.j2', game=service.game, forms=forms.values())
 
 
 @app.route('/game/<game_id>/player/<player_name>')
