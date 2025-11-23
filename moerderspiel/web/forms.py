@@ -53,6 +53,8 @@ class AddPlayerForm(BaseForm):
                         Du kannst dir optional deine Mordaufträge per E-Mail zuschicken lassen.
                         """)
     password = PasswordField('Passwort',
+                             filters=[lambda x: x or None],
+                             validators=[validators.optional()],
                              description="""
                              Du kannst optional ein Passwort angeben, um vor Spielstart die Teilname an den 
                              verschiedenen Kreisen und Multispielen zu ändern und nach Spielstart deine Aufträge
@@ -112,12 +114,15 @@ class CreateGameForm(BaseForm):
                                ('paperless', 'Papierloses Spiel')
                            ])
     password = PasswordField('Passwort',
-                             [validators.EqualTo('password')],
+                             filters=[lambda x: x or None],
+                             validators=[validators.optional()],
                              description="""
                              Das Passwort brauchst Du um das Spiel zu administrieren.
                              Gib das Passwort nicht an Mitspieler weiter.
                              """)
-    confirm_password = PasswordField('Passwort bestätigen')
+    confirm_password = PasswordField('Passwort bestätigen',
+                                     filters=[lambda x: x or None],
+                                     validators=[validators.equal_to('password')])
 
     def validate_game_id(self, field):
         if Game.exists_by_id(self.session, field.data):

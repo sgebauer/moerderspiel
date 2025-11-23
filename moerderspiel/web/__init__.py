@@ -67,6 +67,14 @@ def needs_player_authentication(f):
     return decorated_function
 
 
+def store_player_authentication(player: Player):
+    session.setdefault('player_authenticated', []).append(player.id)
+
+
+def store_gamemaster_authentication(game: Game):
+    session.setdefault('gamemaster_authentication', []).append(game.id)
+
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
     def on_create_game(form):
@@ -77,7 +85,7 @@ def index():
             gamemaster_password=form.password.data
         )
         db.session.commit()
-        session['gamemaster_authenticated'] = (session.get('gamemaster_authenticated') or []) + [service.game.id]
+        store_gamemaster_authentication(service.game)
         return redirect(url_for('gamemaster', game_id=service.game.id, _anchor='top'))
 
     forms = {
@@ -95,19 +103,14 @@ def index():
 @with_game_service
 def game(service: GameService):
     def on_add_player(form: AddPlayerForm):
-        player = service.add_player(
-            name=form.name.data,
-            group=form.group.data,
-            player_password=form.password.data or None)
-        for circle in service.game.circles:
-            service.add_player_to_circle(player, circle)
+        player = service.add_player(name=form.name.data, group=form.group.data, player_password=form.password.data)
         db.session.commit()
 
         if form.email.data:
             send_confirmation_message(player, NotificationAddressType.email, form.email.data)
 
-        flash('Spieler eingetragen', 'success')
-        return redirect(url_for('game', game_id=service.game.id, _anchor='top'))
+        store_player_authentication(player)
+        return redirect(url_for('player', game_id=service.game.id, player_name=player.name, _anchor='top'))
 
     def on_record_murder(form: RecordMurderForm):
         service.record_murder(killer=form.killer.data,
@@ -121,12 +124,12 @@ def game(service: GameService):
         return redirect(url_for('game', game_id=service.game.id, _anchor='top'))
 
     def on_gamemaster_login(form: GameMasterLoginForm):
-        session['gamemaster_authenticated'] = (session.get('gamemaster_authenticated') or []) + [service.game.id]
+        store_gamemaster_authentication(service.game)
         return redirect(url_for('gamemaster', game_id=service.game.id, _anchor='top'))
 
     def on_player_login(form: PlayerLoginForm):
         player = service.get_player(form.name.data)
-        session['player_authenticated'] = (session.get('player_authenticated') or []) + [player.id]
+        store_player_authentication(player)
         return redirect(url_for('player', game_id=service.game.id, player_name=player.name, _anchor='top'))
 
     forms = {
@@ -197,7 +200,8 @@ def player(service: GameService, player: Player):
     return render_template('player.html.j2',
                            player=player,
                            game=service.game,
-                           open_missions=Mission.achievable_missions_by_current_owner(player))
+                           open_missions=Mission.achievable_missions_by_current_owner(player)
+                           if service.game.started else None)
 
 
 @app.get('/game/<game_id>/graph.svg')
@@ -226,11 +230,12 @@ def game_missions(service: GameService):
     return flask.send_file(pdf.generate_game_mission_sheets(service.game))
 
 
-@app.get('/game/<game_id>/missions/<player_name>.pdf')
+@app.get('/game/<game_id>/player/<player_name>/missions.pdf')
 @with_game_service
-@needs_gamemaster_authentication  # For now, until player authentication is implemented
-def player_missions(service: GameService, player_name: str):
-    return flask.send_file(pdf.generate_mission_sheets(service.get_current_missions(player_name)))
+@with_player
+@needs_player_authentication
+def player_missions(service: GameService, player: Player):
+    return flask.send_file(pdf.generate_mission_sheets(service.get_current_missions(player)))
 
 
 @app.get('/game')

@@ -5,7 +5,7 @@ from moerderspiel.db import GameState, Game, Circle, Player, Mission, Notificati
 
 from datetime import datetime
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Tuple
 
 
 class GameError(RuntimeError):
@@ -14,6 +14,7 @@ class GameError(RuntimeError):
 
     def __str__(self):
         return self.value
+
 
 class NoSuchPlayerError(GameError):
     def __init__(self, value):
@@ -46,7 +47,7 @@ class GameService:
                 raise GameError("Circle does not exist")
             return circle
 
-    def add_player(self, name: str, **kwargs) -> Player:
+    def add_player(self, name: str, circles: List[Circle | str] = None, **kwargs) -> Player:
         if self.game.state != GameState.new:
             raise GameError("Game has already been started")
         elif Player.by_game_and_name(self.game, name):
@@ -57,6 +58,10 @@ class GameService:
             name=name,
             **kwargs)
         self.game.add(player)
+
+        for circle in (circles if circles is not None else self.game.circles):
+            self.add_player_to_circle(player, circle)
+
         return player
 
     def add_notification_address(self, player: str | Player, type: NotificationAddressType, address: str):

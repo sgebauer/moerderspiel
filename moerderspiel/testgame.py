@@ -34,17 +34,8 @@ TESTGAME_REASONS = [
 
 
 def populate_test_game(service: GameService, num_players: int = len(TESTGAME_PLAYERS)) -> None:
-    players = []
-
     for player_info in random.sample(TESTGAME_PLAYERS, num_players):
-        players.append(service.add_player(**player_info))
-
-    # Flush all players in order to get their (autoincrementing) IDs assigned before referencing them
-    service.flush_changes()
-
-    for player in players:
-        for circle in service.game.circles:
-            service.add_player_to_circle(player, circle)
+        service.add_player(**player_info)
 
 
 def record_random_murder(service: GameService) -> None:
