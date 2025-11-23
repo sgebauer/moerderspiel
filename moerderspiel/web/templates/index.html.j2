@@ -13,7 +13,7 @@
             </fieldset>
         </form>
         <div class="grid">
-            <a href="#{{ create_game_form.form_id }}" role="button" class="secondary">Neues Spiel erstellen</a>
+            <a href="#create-game" role="button" class="secondary">Neues Spiel erstellen</a>
         </div>
     </main>
 </article>
@@ -63,21 +63,4 @@
         </ul>
     </main>
 </article>
-{% endblock %}
-
-{% block modals %}
-{% call dialog(title='Neues Spiel erstellen') %}
-<main>
-    {% with form = create_game_form %}
-    <form method="post">
-        {{ render_field(form.game_id) }}
-        {{ render_field(form.title) }}
-        {{ render_field(form.template) }}
-        {{ render_field(form.password) }}
-        {{ render_field(form.confirm_password) }}
-        <button type="submit" name="form" value="{{ form.form_id }}">Spiel erstellen</button>
-    </form>
-    {% endwith %}
-</main>
-{% endcall %}
 {% endblock %}

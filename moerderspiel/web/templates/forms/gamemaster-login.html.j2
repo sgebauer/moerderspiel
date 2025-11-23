@@ -1,0 +1,8 @@
+{% call dialog(title='Gamemaster-Login') %}
+<main>
+    <form method="post">
+        {{ render_field(form.password, id=form.form_id) }}
+        <button type="submit" name="form" value="{{ form.form_id }}">Anmelden</button>
+    </form>
+</main>
+{% endcall %}

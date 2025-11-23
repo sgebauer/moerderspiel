@@ -1,0 +1,14 @@
+{% call dialog(title='Mord melden') %}
+<main>
+    <form method="post">
+        {{ render_field(form.killer, id='record-murder') }}
+        {{ render_field(form.victim) }}
+        {{ render_field(form.circle) }}
+        {{ render_field(form.when, value=form.when.default) }}
+        {{ render_field(form.mission_code) }}
+        {{ render_field(form.description) }}
+
+        <button type="submit" name="form" value="{{ form.form_id }}">Mord eintragen</button>
+    </form>
+</main>
+{% endcall %}

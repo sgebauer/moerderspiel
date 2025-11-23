@@ -33,6 +33,9 @@
     </footer>
 
     <div id="modals">
+        {% for form in forms | default([]) %}
+            {% include 'forms/' ~ form.form_id ~ '.html.j2' %}
+        {% endfor %}
         {% block modals %}
         {% endblock %}
     </div>

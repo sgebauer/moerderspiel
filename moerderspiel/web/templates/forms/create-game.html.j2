@@ -1,0 +1,12 @@
+{% call dialog(title='Neues Spiel erstellen') %}
+<main>
+    <form method="post">
+        {{ render_field(form.game_id) }}
+        {{ render_field(form.title) }}
+        {{ render_field(form.template) }}
+        {{ render_field(form.password) }}
+        {{ render_field(form.confirm_password) }}
+        <button type="submit" name="form" value="{{ form.form_id }}">Spiel erstellen</button>
+    </form>
+</main>
+{% endcall %}

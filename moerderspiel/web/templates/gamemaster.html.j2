@@ -149,24 +149,10 @@
                 {% endfor %}
             </table>
             <div role="group">
-                <a role="button" class="primary" href="#{{ add_circle_form.form_id }}">Kreis hinzufügen</a>
+                <a role="button" class="primary" href="#add-circle">Kreis hinzufügen</a>
             </div>
         </form>
         {% endif %}
     </main>
 </article>
-{% endblock %}
-
-{% block modals %}
-{% call dialog(title='Kreis hinzufügen') %}
-<main>
-    {% with form = add_circle_form %}
-    <form method="post">
-        {{ render_field(form.name) }}
-        {{ render_field(form.set) }}
-        <button type="submit" name="form" value="{{ form.form_id }}">Kreis hinzufügen</button>
-    </form>
-    {% endwith %}
-</main>
-{% endcall %}
 {% endblock %}

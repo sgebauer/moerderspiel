@@ -6,7 +6,7 @@
         <h1>
             Spiel: {{ game.title }}
         </h1>
-        <a role="button" class="primary" href="#{{ player_login_form.form_id }}">Login</a>
+        <a role="button" class="primary" href="#login-player">Login</a>
     </header>
     <main>
         {% include "partials/gameinfo.html.j2" %}
@@ -24,7 +24,7 @@
         {% if game.started %}
         <a role="button" class="primary" href="#record-murder">Mord melden</a>
         {% else %}
-        <a role="button" class="primary" href="#{{ add_player_form.form_id }}">Spieler eintragen</a>
+        <a role="button" class="primary" href="#add-player">Spieler eintragen</a>
         {% endif %}
 
         <a role="button" class="secondary" href="../rules/{{ game.id }}">Spielregeln</a>
@@ -44,61 +44,4 @@
         {% include "partials/mission.html.j2" %}
     {%- endfor %}
 </div>
-{% endblock %}
-
-{% block modals %}
-{% call dialog(title='Gamemaster-Login') %}
-<main>
-    {% with form = gamemaster_login_form %}
-    <form method="post">
-        {{ render_field(form.password, id=form.form_id) }}
-        <button type="submit" name="form" value="{{ form.form_id }}">Anmelden</button>
-    </form>
-    {% endwith %}
-</main>
-{% endcall %}
-
-{% call dialog(title='Mord melden') %}
-<main>
-    {% with form = record_murder_form %}
-    <form method="post">
-        {{ render_field(form.killer, id='record-murder') }}
-        {{ render_field(form.victim) }}
-        {{ render_field(form.circle) }}
-        {{ render_field(form.when, value=form.when.default) }}
-        {{ render_field(form.mission_code) }}
-        {{ render_field(form.description) }}
-
-        <button type="submit" name="form" value="{{ form.form_id }}">Mord eintragen</button>
-    </form>
-    {% endwith %}
-</main>
-{% endcall %}
-
-{% call dialog(title='Spieler eintragen') %}
-<main>
-    {% with form = add_player_form %}
-    <form method="post">
-        {{ render_field(form.name, id=form.form_id) }}
-        {{ render_field(form.password) }}
-        {{ render_field(form.group) }}
-        {{ render_field(form.email) }}
-        <button type="submit" name="form" value="{{ form.form_id }}">Spieler eintragen</button>
-    </form>
-    {% endwith %}
-</main>
-{% endcall %}
-
-{% call dialog(title='Login') %}
-<main>
-    {% with form = player_login_form %}
-    <form method="post">
-        {{ render_field(form.name, id=form.form_id) }}
-        {{ render_field(form.password) }}
-        <button type="submit" name="form" value="{{ form.form_id }}">Login</button>
-    </form>
-    {% endwith %}
-</main>
-{% endcall %}
-
 {% endblock %}

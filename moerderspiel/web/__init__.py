@@ -89,7 +89,7 @@ def index():
                 flash(str(e), 'error')
 
     return render_template('index.html.j2',
-                           create_game_form=create_game_form)
+                           forms=[create_game_form])
 
 
 @app.route('/game/<game_id>', methods=['GET', 'POST'])
@@ -152,10 +152,7 @@ def game(service: GameService):
                            game=service.game,
                            completed_missions=Mission.completed_missions_in_game(service.game),
                            mass_murderers=Mission.mass_murderers_by_game(service.game),
-                           add_player_form=add_player_form,
-                           record_murder_form=record_murder_form,
-                           gamemaster_login_form=gamemaster_login_form,
-                           player_login_form=player_login_form)
+                           forms=[add_player_form, record_murder_form, gamemaster_login_form, player_login_form])
 
 
 @app.route('/gamemaster/<game_id>', methods=['GET', 'POST'])
@@ -196,7 +193,7 @@ def gamemaster(service: GameService):
 
     return render_template('gamemaster.html.j2',
                            game=service.game,
-                           add_circle_form=add_circle_form)
+                           forms=[add_circle_form])
 
 
 @app.route('/game/<game_id>/player/<player_name>')
