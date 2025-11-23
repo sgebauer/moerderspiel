@@ -13,6 +13,7 @@ from moerderspiel.game import GameService
 
 class AddPlayerForm(Form):
     form_id = "add-player"
+    form_title = "Spieler eintragen"
 
     name = StringField('Spielername',
                        [
@@ -21,7 +22,6 @@ class AddPlayerForm(Form):
                                              message=f"Dein Name muss zwischen {constants.MIN_PLAYER_NAME_LENGTH} und {constants.MAX_PLAYER_NAME_LENGTH} Zeichen lang sein."),
                            validators.Regexp(constants.PLAYER_NAME_REGEX, message="Dein Name enthält ungültige Sonderzeichen.")
                        ],
-                       id=form_id,
                        description="""
                         Der Spielername muss innerhalb des Spiels eindeutig sein.
                         Bitte trage hier den Namen ein, der auf deinem Namensschild steht (sofern vorhanden).
@@ -61,8 +61,9 @@ class AddPlayerForm(Form):
 
 class PlayerLoginForm(Form):
     form_id = "login-player"
+    form_title = "Login"
 
-    name = SelectField('Spielername', [validators.InputRequired()], id=form_id)
+    name = SelectField('Spielername', [validators.InputRequired()])
     password = PasswordField('Passwort', [validators.InputRequired()])
 
     def __init__(self, service: GameService, *args, **kwargs: object):
@@ -78,10 +79,10 @@ class PlayerLoginForm(Form):
 
 class CreateGameForm(Form):
     form_id = "create-game"
+    form_title = "Spiel erstellen"
 
     game_id = StringField('Eindeutige Spiel-ID',
                           [validators.Length(max=constants.MAX_GAME_ID_LENGTH)],
-                          id=form_id,
                           description="""
                      Die Spiel-ID muss eindeutig sein und darf nur Kleinbuchstaben und Zahlen enthalten.
                      """)
@@ -111,10 +112,10 @@ class CreateGameForm(Form):
 
 class AddCircleForm(Form):
     form_id = "add-circle"
+    form_title = "Kreis hinzufügen"
 
     name = StringField('Name des Kreises',
                        [validators.Length(max=constants.MAX_CIRCLE_NAME_LENGTH)],
-                       id=form_id,
                        description="""
                        Der Name muss innerhalb des Spiels eindeutig sein.
                        """)
@@ -129,6 +130,8 @@ class AddCircleForm(Form):
 
 class GameMasterLoginForm(Form):
     form_id = "gamemaster-login"
+    form_title = "Gamemaster-Login"
+    form_submit_text = "Login"
 
     password = PasswordField('Passwort', [validators.InputRequired()],
                              description="""
@@ -147,6 +150,7 @@ class GameMasterLoginForm(Form):
 
 class RecordMurderForm(Form):
     form_id = "record-murder"
+    form_title = "Mord eintragen"
 
     killer = SelectField('Mörder',
                          description="Wer hat gemordet? (Normalerweise du selbst)")
@@ -158,7 +162,9 @@ class RecordMurderForm(Form):
                          description="In welchem Kreis ist der Mord passiert?")
 
     when = DateTimeLocalField('Zeitpunkt',
-                              description="Wann ist der Mord passiert?")
+                              description="Wann ist der Mord passiert?",
+                              default=datetime.datetime.now,
+                              format='%Y-%m-%d %H:%M')
 
     mission_code = StringField('Auftrags-Code',
                                description="Der Code des Auftrags, der gerade erledigt wurde.")
@@ -174,4 +180,3 @@ class RecordMurderForm(Form):
         self.killer.choices = [(p.name, p.name) for p in service.game.players]
         self.victim.choices = [(p.name, p.name) for p in service.game.players]
         self.circle.choices = [(c.name, c.name) for c in service.game.circles]
-        self.when.default = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M')

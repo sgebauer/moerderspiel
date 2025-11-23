@@ -34,7 +34,7 @@
 
     <div id="modals">
         {% for form in forms | default([]) %}
-            {% include 'forms/' ~ form.form_id ~ '.html.j2' %}
+            {% include 'partials/modal_form.html.j2' %}
         {% endfor %}
         {% block modals %}
         {% endblock %}

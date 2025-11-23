@@ -1,9 +1,0 @@
-{% call dialog(title='Login') %}
-<main>
-    <form method="post">
-        {{ render_field(form.name, id=form.form_id) }}
-        {{ render_field(form.password) }}
-        <button type="submit" name="form" value="{{ form.form_id }}">Login</button>
-    </form>
-</main>
-{% endcall %}

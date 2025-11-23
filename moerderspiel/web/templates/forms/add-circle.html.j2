@@ -1,9 +1,0 @@
-{% call dialog(title='Kreis hinzufügen') %}
-<main>
-    <form method="post">
-        {{ render_field(form.name) }}
-        {{ render_field(form.set) }}
-        <button type="submit" name="form" value="{{ form.form_id }}">Kreis hinzufügen</button>
-    </form>
-</main>
-{% endcall %}

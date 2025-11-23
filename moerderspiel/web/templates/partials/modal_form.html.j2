@@ -1,0 +1,13 @@
+{% call dialog(title=form.form_title) %}
+<main>
+    <form method="post">
+        {% for field in form %}
+          {{ render_field(field, id=form.form_id if loop.first else field.id | default(None)) }}
+        {% endfor %}
+
+        <button type="submit" name="form" value="{{ form.form_id }}">
+            {{ form.form_submit_text | default(form.form_title) }}
+        </button>
+    </form>
+</main>
+{% endcall %}
