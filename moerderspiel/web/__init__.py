@@ -68,11 +68,11 @@ def needs_player_authentication(f):
 
 
 def store_player_authentication(player: Player):
-    session.setdefault('player_authenticated', []).append(player.id)
+    session['player_authenticated'] = (session.get('player_authenticated') or []) + [player.id]
 
 
 def store_gamemaster_authentication(game: Game):
-    session.setdefault('gamemaster_authentication', []).append(game.id)
+    session['gamemaster_authenticated'] = (session.get('gamemaster_authenticated') or []) + [game.id]
 
 
 @app.route('/', methods=['GET', 'POST'])

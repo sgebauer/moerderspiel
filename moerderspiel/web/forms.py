@@ -114,14 +114,12 @@ class CreateGameForm(BaseForm):
                                ('paperless', 'Papierloses Spiel')
                            ])
     password = PasswordField('Passwort',
-                             filters=[lambda x: x or None],
-                             validators=[validators.optional()],
+                             validators=[validators.input_required(), validators.Length(min=3)],
                              description="""
                              Das Passwort brauchst Du um das Spiel zu administrieren.
                              Gib das Passwort nicht an Mitspieler weiter.
                              """)
     confirm_password = PasswordField('Passwort bestätigen',
-                                     filters=[lambda x: x or None],
                                      validators=[validators.equal_to('password')])
 
     def validate_game_id(self, field):
