@@ -21,8 +21,10 @@
     \begin{center}
       \getenv{headline} \\
       \medskip
-      Mordauftrag: \\
-      {\Large \textbf{\sffamily{\getenv{victim}}}}
+      {\tiny Dein Mordauftrag:} \\
+      {\Large \textbf{\sffamily{\getenv{victim}}}} \\
+      \textbf{\sffamily{\getenv{victim_group}}} \\[1em]
+      Auftrags-Code: \texttt{\getenv{missioncode}}
     \end{center}
 
     \textbf{Trage diesen Auftrag immer bei dir.}
@@ -30,7 +32,6 @@
     Wurdest du in diesem Kreis ermordet, gib diesen Auftrag deinem Mörder.
 
     \begin{center}
-      Auftrags-Code: \texttt{\getenv{missioncode}} \\
       \texttt{\getenv{gameurl}}
     \end{center}
   \end{minipage}}
