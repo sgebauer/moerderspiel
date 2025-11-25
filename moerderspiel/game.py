@@ -160,8 +160,10 @@ class GameService:
 
         self.game.state = GameState.running
 
-        for player in self.game.players:
-            self.send_mission_update(player)
+        # TODO: This will take a very long time for large games
+        #       Make sure we do this outside of the web request / database transaction
+#        for player in self.game.players:
+#            self.send_mission_update(player)
 
     def record_murder(self, killer: str | Player, victim: str | Player, circle: str | Circle, when: datetime,
                       reason: str, code: str) -> None:
