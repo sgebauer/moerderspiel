@@ -93,13 +93,38 @@ def index():
     }
 
     result = None
+    if request.method == 'GET' and 'game-id' in request.args:
+        result = redirect(url_for('game', game_id=request.args['game-id']))
     if request.method == 'POST' and 'form' in request.form:
         result = forms[request.form['form']].handle_form_submit()
 
     return result or render_template('index.html.j2', forms=forms.values())
 
+@app.route('/-/css/<path:path>')
+def css(path):
+    return send_from_directory('static/css', path)
 
-@app.route('/game/<game_id>', methods=['GET', 'POST'])
+
+@app.route('/-/img/<path:path>')
+def img(path):
+    return send_from_directory('static/img', path)
+
+
+@app.get('/-/confirm_address')
+def confirm_address():
+    if 'token' not in request.args:
+        abort(400)
+
+    data = jwt.decode(request.args['token'], key=app.secret_key, algorithms=["HS256"])
+    service = GameService(Game.by_id(db.session, data['game']))
+    service.add_notification_address(data['player'], NotificationAddressType[data['type']], data['address'])
+    db.session.commit()
+
+    flash('Benachrichtigungs-Adresse bestätigt', 'success')
+    return redirect(url_for('game', game_id=service.game.id))
+
+
+@app.route('/<game_id>', methods=['GET', 'POST'])
 @with_game_service
 def game(service: GameService):
     def on_add_player(form: AddPlayerForm):
@@ -150,7 +175,7 @@ def game(service: GameService):
                                      forms=forms.values())
 
 
-@app.route('/gamemaster/<game_id>', methods=['GET', 'POST'])
+@app.route('/<game_id>/gamemaster', methods=['GET', 'POST'])
 @with_game_service
 @needs_gamemaster_authentication
 def gamemaster(service: GameService):
@@ -188,7 +213,7 @@ def gamemaster(service: GameService):
     return result or render_template('gamemaster.html.j2', game=service.game, forms=forms.values())
 
 
-@app.route('/game/<game_id>/player/<player_name>')
+@app.route('/<game_id>/player/<player_name>')
 @with_game_service
 @with_player
 @needs_player_authentication
@@ -204,7 +229,7 @@ def player(service: GameService, player: Player):
                            if service.game.started else None)
 
 
-@app.get('/game/<game_id>/graph.svg')
+@app.get('/<game_id>/graph.svg')
 @with_game_service
 def game_graph(service: GameService):
     if 'circle' in request.args:
@@ -215,7 +240,7 @@ def game_graph(service: GameService):
     return flask.send_file(graph.generate_circles_graph(circles, show_original_owners=service.game.ended))
 
 
-@app.get('/game/<game_id>/wall')
+@app.get('/<game_id>/wall')
 @with_game_service
 def game_wall(service: GameService):
     return render_template('wall.html.j2',
@@ -223,51 +248,19 @@ def game_wall(service: GameService):
                            completed_missions=Mission.completed_missions_in_game(service.game))
 
 
-@app.get('/game/<game_id>/missions.pdf')
+@app.get('/<game_id>/gamemaster/missions.pdf')
 @with_game_service
 @needs_gamemaster_authentication
 def game_missions(service: GameService):
     return flask.send_file(pdf.generate_game_mission_sheets(service.game))
 
 
-@app.get('/game/<game_id>/player/<player_name>/missions.pdf')
+@app.get('/<game_id>/player/<player_name>/missions.pdf')
 @with_game_service
 @with_player
 @needs_player_authentication
 def player_missions(service: GameService, player: Player):
     return flask.send_file(pdf.generate_mission_sheets(service.get_current_missions(player)))
-
-
-@app.get('/game')
-def game_redirect():
-    if 'id' not in request.args:
-        return redirect(url_for('/'))
-    else:
-        return redirect(url_for('game', game_id=request.args['id']))
-
-
-@app.route('/css/<path:path>')
-def css(path):
-    return send_from_directory('static/css', path)
-
-
-@app.route('/img/<path:path>')
-def img(path):
-    return send_from_directory('static/img', path)
-
-
-@app.get('/confirm_address')
-def confirm_address():
-    if 'token' not in request.args:
-        abort(400)
-
-    data = jwt.decode(request.args['token'], key=app.secret_key, algorithms=["HS256"])
-    service = GameService(Game.by_id(db.session, data['game']))
-    service.add_notification_address(data['player'], NotificationAddressType[data['type']], data['address'])
-    db.session.commit()
-
-    flash('Benachrichtigungs-Adresse bestätigt', 'success')
-    return redirect(url_for('game', game_id=service.game.id))
 
 
 def send_confirmation_message(player: Player, address_type: NotificationAddressType, address: str):

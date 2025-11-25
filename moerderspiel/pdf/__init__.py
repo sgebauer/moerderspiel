@@ -17,7 +17,7 @@ def generate_mission_sheet(mission: Mission) -> str:
         missioncode=mission.code,
         owner=mission.current_owner.name,
         victim=mission.victim.name,
-        gameurl=f"{BASE_URL}/game/{mission.game.id}",
+        gameurl=f"{BASE_URL}/{mission.game.id}",
         headline=(mission.game.title if len(mission.game.circles) == 1 else f"{mission.game.title} - {mission.circle.name}")
     )
 

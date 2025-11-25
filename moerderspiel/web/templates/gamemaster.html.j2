@@ -16,10 +16,10 @@
             {% endif %}
 
             {% if game.started %}
-            <a role="button" class="secondary" href="/game/{{ game.id }}/missions.pdf" target="_blank">Aufträge herunterladen</a>
+            <a role="button" class="secondary" href="{{ url_for('game_missions', game_id=game.id) }}" target="_blank">Aufträge herunterladen</a>
             {% endif %}
 
-            <a role="button" class="secondary" href="/game/{{ game.id }}" target="_blank">Zur Spiel-Seite</a>
+            <a role="button" class="secondary" href="{{ url_for('game', game_id=game.id) }}" target="_blank">Zur Spiel-Seite</a>
         </form>
     </main>
 </article>

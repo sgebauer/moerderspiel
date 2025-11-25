@@ -27,15 +27,13 @@
         <a role="button" class="primary" href="#add-player">Spieler eintragen</a>
         {% endif %}
 
-        <a role="button" class="secondary" href="../rules/{{ game.id }}">Spielregeln</a>
-
         {% if game.started %}
-        <a role="button" class="secondary" href="../game/{{ game.id }}/wall">Mörderwall</a>
+        <a role="button" class="secondary" href="{{ url_for('game_wall', game_id=game.id) }}">Mörderwall</a>
         {% endif %}
 
-        <a role="button" class="secondary" href="../game/{{ game.id }}/graph.svg" target="_blank">Spielgraph</a>
+        <a role="button" class="secondary" href="{{ url_for('game_graph', game_id=game.id) }}" target="_blank">Spielgraph</a>
 
-        <a role="button" class="secondary" href="../gamemaster/{{ game.id }}">Gamemaster-Bereich</a>
+        <a role="button" class="secondary" href="{{ url_for('gamemaster', game_id=game.id) }}">Gamemaster-Bereich</a>
     </footer>
 </article>
 

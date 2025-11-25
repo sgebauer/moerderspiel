@@ -6,8 +6,8 @@
 
 <html lang="en">
 <head>
-    <link rel="stylesheet" href="/css/pico.min.css" />
-    <link rel="stylesheet" href="/css/moerderspiel.css" />
+    <link rel="stylesheet" href="{{ url_for('css', path='pico.min.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('css', path='moerderspiel.css') }}" />
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="light dark" />
@@ -18,7 +18,7 @@
 <body>
     <header class="container">
         {% block header %}
-        <h1><a href="/">Das Mörderspiel</a></h1>
+        <h1><a href="{{ url_for('index') }}">Das Mörderspiel</a></h1>
         {% endblock %}
     </header>
 
