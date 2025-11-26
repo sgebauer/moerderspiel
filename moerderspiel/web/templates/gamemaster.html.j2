@@ -55,7 +55,7 @@
                     <td>{{ player.completed_missions | list | length }}</td>
                     {% else %}
                     <td>{{ '✔' if player.player_password else '' }}</td>
-                    <td>{{ player.notification_addresses | map(attribute='type') | map(str) | sort | unique | join(', ') }}</td>
+                    <td>{{ player.notification_addresses | map(attribute='type') | map('string') | sort | unique | join(', ') }}</td>
                     {% endif %}
                     <td>
                         <form method="post">
