@@ -110,6 +110,11 @@ def img(path):
     return send_from_directory('static/img', path)
 
 
+@app.route('/-/assets/<path:path>')
+def assets(path):
+    return send_from_directory('static/assets', path)
+
+
 @app.get('/-/confirm_address')
 def confirm_address():
     if 'token' not in request.args:
