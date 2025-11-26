@@ -221,6 +221,6 @@ class RecordMurderForm(BaseForm):
     def __init__(self, service: GameService, **kwargs):
         super().__init__(**kwargs)
         self.service = service
-        self.killer.choices = [(p.name, p.name) for p in service.game.players]
-        self.victim.choices = [(p.name, p.name) for p in service.game.players]
+        self.killer.choices = [(p.name, p.name + (f" ({p.group})" if p.group else "")) for p in service.game.players]
+        self.victim.choices = [(p.name, p.name + (f" ({p.group})" if p.group else "")) for p in service.game.players]
         self.circle.choices = [(c.name, c.name) for c in service.game.circles]
