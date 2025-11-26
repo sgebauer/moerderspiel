@@ -36,8 +36,13 @@
                     <tr>
                         <th>Name</th>
                         <th>Gruppe</th>
+                        <th>{{ 'Leben' if game.started else 'Kreise' }}</th>
+                        {% if game.started %}
                         <th>Morde</th>
-                        <th>Leben</th>
+                        {% else %}
+                        <th>Passwort</th>
+                        <th>Benachrichtigungen</th>
+                        {% endif %}
                         <th>Aktionen</th>
                     </tr>
                 </thead>
@@ -45,8 +50,13 @@
                 <tr>
                     <td>{{ player.name }}</td>
                     <td>{{ player.group }}</td>
+                    <td><span data-tooltip="{{ player.victim_missions | rejectattr('completed') | map(attribute='circle') | map(attribute='name') | join(', ') }}">{{ player.victim_missions | rejectattr('completed') | list | length }}</span></td>
+                    {% if game.started %}
                     <td>{{ player.completed_missions | list | length }}</td>
-                    <td>{{ player.victim_missions | rejectattr('completed') | list | length }}</td>
+                    {% else %}
+                    <td>{{ '✔' if player.player_password else '' }}</td>
+                    <td>{{ player.notification_addresses | map(attribute='type') | map(str) | sort | unique | join(', ') }}</td>
+                    {% endif %}
                     <td>
                         <form method="post">
                             <input type="text" style="display: none;" name="player" value="{{ player.name }}"/>
