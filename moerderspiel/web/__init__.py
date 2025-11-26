@@ -128,6 +128,11 @@ def confirm_address():
 @with_game_service
 def game(service: GameService):
     def on_add_player(form: AddPlayerForm):
+        if not form.email.data and not form.password.data:
+            # TODO: Turn this into a validator, and make it configurable per game
+            flash('Bitte gib eine E-Mail-Adresse oder ein Passwort an - Sonst kommst du später nicht an deine Aufträge!', 'error')
+            return None
+
         player = service.add_player(name=form.name.data, group=form.group.data, player_password=form.password.data)
         db.session.commit()
 
