@@ -31,7 +31,7 @@ def generate_circles_graph(circles: List[Circle], show_original_owners: bool = F
             if mission.victim in mass_murderers:
                 styles.append('bold')
 
-            dot.node(mission.victim.name, style=', '.join(styles))
+            dot.node(mission.victim.name, label=f" {mission.victim.name}\n{mission.victim.group}", style=', '.join(styles))
 
             if show_original_owners:
                 dot.edge(mission.initial_owner.name, mission.victim.name, style="dashed", color=color)
@@ -44,7 +44,7 @@ def generate_circles_graph(circles: List[Circle], show_original_owners: bool = F
                     killer = mission.killer.name
 
                 dot.edge(killer, mission.victim.name, color=color,
-                         label=f"{mission.completion_reason}\n({mission.completion_date.strftime('%Y-%m-%d %H:%M')})")
+                         label=f" {mission.completion_reason}\n({mission.completion_date.strftime('%Y-%m-%d %H:%M')})")
 
     path = get_circles_graph_cache_path(circles)
     dot.render(format='svg', outfile=path)
