@@ -32,7 +32,7 @@ def generate_circles_graph(circles: List[Circle], show_original_owners: bool = F
                 styles.append('bold')
 
             if show_isolated_players or show_original_owners or mission.completed or mission.victim.completed_missions:
-                dot.node(mission.victim.name, label=f" {mission.victim.name}\n{mission.victim.group}", style=', '.join(styles))
+                dot.node(str(mission.victim.id), label=f" {mission.victim.name}\n{mission.victim.group}", style=', '.join(styles))
 
             if show_original_owners:
                 dot.edge(mission.initial_owner.name, mission.victim.name, style="dashed", color=color)
@@ -42,9 +42,9 @@ def generate_circles_graph(circles: List[Circle], show_original_owners: bool = F
                     dot.node('Game Master', color='#aaaaaa', fontcolor='#aaaaaa')
                     killer = 'Game Master'
                 else:
-                    killer = mission.killer.name
+                    killer = str(mission.killer.id)
 
-                dot.edge(killer, mission.victim.name, color=color,
+                dot.edge(killer, str(mission.victim.id), color=color,
                          label=f" {mission.completion_reason}\n({mission.completion_date.strftime('%Y-%m-%d %H:%M')})")
 
     path = get_circles_graph_cache_path(circles)
