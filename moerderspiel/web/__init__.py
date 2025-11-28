@@ -247,7 +247,9 @@ def game_graph(service: GameService):
     else:
         circles = Circle.by_game(service.game)
 
-    return flask.send_file(graph.generate_circles_graph(circles, show_original_owners=service.game.ended))
+    return flask.send_file(graph.generate_circles_graph(circles,
+                                                        show_original_owners=service.game.ended,
+                                                        show_isolated_players=service.game.ended))
 
 
 @app.get('/<game_id>/wall')
