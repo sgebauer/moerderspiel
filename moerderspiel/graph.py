@@ -24,15 +24,15 @@ def generate_circles_graph(circles: List[Circle], show_original_owners: bool = F
     for circle in circles:
         color = '#%02x%02x%02x' % get_circle_color(circle)
 
-        missions = circle.missions if show_isolated_players else Mission.completed_missions_in_circle(circle)
-        for mission in missions:
+        for mission in circle.missions:
             styles = []
             if not mission.victim.alive:
                 styles.append('dashed')
             if mission.victim in mass_murderers:
                 styles.append('bold')
 
-            dot.node(mission.victim.name, label=f" {mission.victim.name}\n{mission.victim.group}", style=', '.join(styles))
+            if show_isolated_players or show_original_owners or mission.completed or mission.victim.completed_missions:
+                dot.node(mission.victim.name, label=f" {mission.victim.name}\n{mission.victim.group}", style=', '.join(styles))
 
             if show_original_owners:
                 dot.edge(mission.initial_owner.name, mission.victim.name, style="dashed", color=color)
