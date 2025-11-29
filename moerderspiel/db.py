@@ -352,6 +352,13 @@ class Mission(Base):
         return (not self.completed) and (self.get_next_uncompleted() != self)
 
     @property
+    def kicked(self) -> bool:
+        """
+        Whether this mission has been completed by kicking the player.
+        """
+        return self.completed and self.killer is None
+
+    @property
     def game(self) -> Game:
         return self.circle.game
 

@@ -38,7 +38,7 @@
 </article>
 
 <div id="missions">
-    {% for mission in completed_missions -%}
+    {% for mission in completed_missions | rejectattr('kicked') -%}
         {% include "partials/mission.html.j2" %}
     {%- endfor %}
 </div>
