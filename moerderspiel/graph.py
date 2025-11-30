@@ -35,7 +35,7 @@ def generate_circles_graph(circles: List[Circle], show_original_owners: bool = F
                 dot.node(str(mission.victim.id), label=f" {mission.victim.name}\n{mission.victim.group}", style=', '.join(styles))
 
             if show_original_owners:
-                dot.edge(mission.initial_owner.name, mission.victim.name, style="dashed", color=color)
+                dot.edge(str(mission.initial_owner.id), str(mission.victim.id), style="dashed", color=color)
 
             if mission.completed:
                 if not mission.killer:
