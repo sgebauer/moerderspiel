@@ -21,10 +21,10 @@
     </main>
 
     <footer class="grid">
-        {% if game.started %}
-        <a role="button" class="primary" href="#record-murder">Mord melden</a>
-        {% else %}
+        {% if not game.started %}
         <a role="button" class="primary" href="#add-player">Spieler eintragen</a>
+        {% elif not game.ended %}
+        <a role="button" class="primary" href="#record-murder">Mord melden</a>
         {% endif %}
 
         {% if game.started %}
