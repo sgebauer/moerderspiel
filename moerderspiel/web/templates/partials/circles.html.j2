@@ -8,7 +8,7 @@
     <table>
         <thead>
         <tr>
-            <th>Name</th>
+            <th>Spieler</th>
             <th>Ermordet von</th>
             <th>Wann?</th>
             <th>Tathergang</th>
@@ -16,8 +16,8 @@
         </thead>
         {% for mission in circle.missions | sort(attribute='position') %}
         <tr>
-            <td>{{ mission.victim.name }}</td>
-            <td>{{ mission.killer.name | default('', true) }}</td>
+            <td>{{ mission.victim.name }}<br><small>{{ mission.victim.group }}</small></td>
+            <td>{{ mission.killer.name | default('', true) }}<br><small>{{ mission.killer.group | default('', true) }}</small></td>
             <td>{{ mission.completion_date | default('', true) }}</td>
             <td>{{ mission.completion_reason | default('', true) }}</td>
         </tr>
