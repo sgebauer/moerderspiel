@@ -102,33 +102,7 @@
     </header>
     <main>
         {% if game.started %}
-        {% for circle in game.circles %}
-        <details>
-            <summary role="button" class="secondary">
-                {{- circle.name -}}
-                {{- '(' ~ circle.set ~ ')' if circle.set else '' -}}
-                {{- ' - ' ~ (circle.missions | rejectattr('completed') | list | length) ~ ' Lebende Spieler' -}}
-            </summary>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Ermordet von</th>
-                        <th>Wann?</th>
-                        <th>Tathergang</th>
-                    </tr>
-                </thead>
-                {% for mission in circle.missions | sort(attribute='position') %}
-                <tr>
-                    <td>{{ mission.victim.name }}</td>
-                    <td>{{ mission.killer.name | default('', true) }}</td>
-                    <td>{{ mission.completion_date | default('', true) }}</td>
-                    <td>{{ mission.completion_reason | default('', true) }}</td>
-                </tr>
-                {% endfor %}
-            </table>
-        </details>
-        {% endfor %}
+        {% include "partials/circles.html.j2" %}
         {% else %}
         <form method="post">
             <table>

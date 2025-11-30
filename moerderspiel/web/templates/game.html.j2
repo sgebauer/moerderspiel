@@ -37,6 +37,23 @@
     </footer>
 </article>
 
+{% if game.ended %}
+<article>
+    <header>
+        <h1>Kreise</h1>
+    </header>
+    <main>
+        <p>
+            <small>
+            Die folgenden Listen zeigen die Reihenfolge der Aufträge in jedem Kreis.
+            Jeder Spieler hatte den jeweils nächsten (lebenden) Spieler in der Liste als Auftrag.
+            </small>
+        </p>
+        {% include "partials/circles.html.j2" %}
+    </main>
+</article>
+{% endif %}
+
 <div id="missions">
     {% for mission in completed_missions | rejectattr('kicked') -%}
         {% include "partials/mission.html.j2" %}
